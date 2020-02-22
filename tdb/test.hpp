@@ -98,41 +98,40 @@ TEST_CASE("100,000 Inserts", "[tdb::]")
 
 TEST_CASE("1,000,000 MapReduce8 Threaded Inserts", "[tdb::]")
 {
-    //Note about this test, there is not currently a mutex protecting the growth and allocation of blocks.
-    //This test correctly identifies that this causes trouble about 10% of the time.
-    //This object works well with read IO but needs to be fixed for writes.
-    //
 
+    constexpr auto M = 8;
     constexpr auto lim = 1000 * 1000;
 
-    std::filesystem::remove_all("db.dat");
+    std::filesystem::remove_all("db.dat0");
+    std::filesystem::remove_all("db.dat1");
+    std::filesystem::remove_all("db.dat2");
+    std::filesystem::remove_all("db.dat3");
+    std::filesystem::remove_all("db.dat4");
+    std::filesystem::remove_all("db.dat5");
+    std::filesystem::remove_all("db.dat6");
+    std::filesystem::remove_all("db.dat7");
 
     {
-        MapReduce8 dx("db.dat");
+        MapReduceT<M> dx("db.dat");
 
         auto& keys = singleton<std::array<RandomKeyT<Key32>, lim>>(); // Heap
 
         std::atomic<size_t> identity = 0;
         std::atomic<size_t> done = 0;
-        std::array<size_t, 8> inserts = { 0,0,0,0,0,0,0,0 };
-        std::array<size_t, 8> finds = { 0,0,0,0,0,0,0,0 };
+        std::array<size_t, M> inserts = { 0,0,0,0,0,0,0,0 };
+        std::array<size_t, M> finds = { 0,0,0,0,0,0,0,0 };
 
-        std::for_each_n(std::execution::par_unseq, keys.data(), 8, [&](auto v)
+        std::for_each_n(std::execution::par_unseq, keys.data(), M, [&](auto v)
         {
             auto d = identity++;
             size_t li = 0, lf = 0;
 
             for (size_t i = 0; i < lim; i++)
             {
-                auto res = dx.Insert(keys[i], uint64_t(i), d);
-                if (res.first)
+                if (dx.Insert(keys[i], uint64_t(i), d).first)
                 {
                     inserts[d]++;
                     li++;
-                }
-                if (res.second)
-                {
-                    std::cout << "OVERWRITE" << std::endl;
                 }
             }         
 
@@ -145,14 +144,8 @@ TEST_CASE("1,000,000 MapReduce8 Threaded Inserts", "[tdb::]")
                 }
             } 
 
-            if (li != lf)
-                std::cout << "SANITY CHECK FAILED" << std::endl;
-
             done++;
         });
-
-        //In some cases the finds && inserts are not flushed. Need to actually atomically load from those memory addresses. This also seems to work.
-        while(done != 8) std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         auto total_insert = std::accumulate(inserts.begin(), inserts.end(),0);
         auto total_find = std::accumulate(finds.begin(), finds.end(), 0);
@@ -161,7 +154,14 @@ TEST_CASE("1,000,000 MapReduce8 Threaded Inserts", "[tdb::]")
         CHECK(lim == total_insert);
     }
 
-    std::filesystem::remove_all("db.dat");
+    std::filesystem::remove_all("db.dat0");
+    std::filesystem::remove_all("db.dat1");
+    std::filesystem::remove_all("db.dat2");
+    std::filesystem::remove_all("db.dat3");
+    std::filesystem::remove_all("db.dat4");
+    std::filesystem::remove_all("db.dat5");
+    std::filesystem::remove_all("db.dat6");
+    std::filesystem::remove_all("db.dat7");
 }
 
 TEST_CASE("Multi-Threaded Access", "[tdb::]")

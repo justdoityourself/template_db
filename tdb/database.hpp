@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "host.hpp"
 #include "btree.hpp"
 #include "recycling.hpp"
@@ -9,63 +11,43 @@
 
 namespace tdb
 {
-	using R = _Recycling< _MapFile<1024*1024>, 64 * 1024 >;
-	using T = _BTree<R, OrderedListPointer >;
-	using Simple = _Database< R, T >;
+	template <size_t S> using _R = _Recycling< _MapFile<S>, 64 * 1024 >;
+	template <size_t S> using _T = _BTree<_R<S>, OrderedListPointer >;
+	template <size_t S> using _Simple = _Database< _R<S>, _T<S> >;
 
-	using RL = _Recycling< _MapFile<64*1024*1024>, 64 * 1024 >;
-	using TL = _BTree<RL, OrderedListPointer >;
-	using SimpleLarge = _Database< RL, TL >;
+	using Simple = _Simple< 1024 * 1024 >;
+	using SimpleLarge = _Simple< 64*1024*1024 >;
 
-	using _MapReduce8 = _Database< RL, TL, TL, TL, TL, TL, TL, TL, TL >;
-
-	class MapReduce8
+	template < size_t C = 8, size_t G = 8*1024*1024 > class MapReduceT
 	{
-		_MapReduce8 db;
+		std::array<_Simple<G>, C> dbr;
 
 	public:
-		MapReduce8(string_view name) : db(name) {}
+		MapReduceT(string_view name) 
+		{
+			auto idx = 0;
+			for (auto& e : dbr)
+				e.Open(std::string(name) + std::to_string(idx++));
+		}
 
 		template <typename K, typename V> auto Insert(const K& k, const V& v, size_t thread = -1)
 		{
-			auto map = *k.data() % 8;
+			auto map = *k.data() % C;
 
 			if (thread != -1 && map != thread)
 				return std::make_pair((uint64_t*)nullptr, false);
 
-			switch (map)
-			{
-			default:
-			case 0: return db.Table<0>().Insert(k, v);
-			case 1: return db.Table<1>().Insert(k, v);
-			case 2: return db.Table<2>().Insert(k, v);
-			case 3: return db.Table<3>().Insert(k, v);
-			case 4: return db.Table<4>().Insert(k, v);
-			case 5: return db.Table<5>().Insert(k, v);
-			case 6: return db.Table<6>().Insert(k, v);
-			case 7: return db.Table<7>().Insert(k, v);
-			}
+			return dbr[map].Table<0>().Insert(k, v);
 		}
 
 		template <typename K> auto Find(const K& k, size_t thread = -1)
 		{
-			auto map = *k.data() % 8;
+			auto map = *k.data() % C;
 
 			if (thread != -1 && map != thread)
 				return (uint64_t*)nullptr;
 
-			switch (map)
-			{
-			default:
-			case 0: return db.Table<0>().Find(k);
-			case 1: return db.Table<1>().Find(k);
-			case 2: return db.Table<2>().Find(k);
-			case 3: return db.Table<3>().Find(k);
-			case 4: return db.Table<4>().Find(k);
-			case 5: return db.Table<5>().Find(k);
-			case 6: return db.Table<6>().Find(k);
-			case 7: return db.Table<7>().Find(k);
-			}
+			return dbr[map].Table<0>().Find(k);
 		}
 	};
 }

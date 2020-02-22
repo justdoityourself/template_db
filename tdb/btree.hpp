@@ -227,10 +227,17 @@ namespace tdb
 	{
 		using key_t = typename node_t::Key;
 		using pointer_t = typename node_t::Pointer;
+		using link_t = typename node_t::Link;
 		static const int link_c = node_t::Links;
 
 		R* io = nullptr;
-		node_t* root = nullptr;
+		link_t root_n;
+
+		auto Root()
+		{
+			return &io->template Lookup<node_t>(root_n);
+		}
+
 	public:
 		_BTree() {}
 
@@ -241,146 +248,154 @@ namespace tdb
 
 		void Validate() {}
 
-		void Open(R* _io, int n)
+		void Open(R* _io, link_t _n)
 		{
+			root_n = _n;
 			io = _io;
 
-			if (io->size() <= n)
-				root = &io->template Allocate<node_t>();
-			else
-				root = &io->template Lookup<node_t>(n);
+			if (io->size() <= root_n)
+				io->template Allocate<node_t>();
 		}
 
-	private: template < typename F > int _Iterate(node_t* node, F f)
-	{
-		int count = node->count;
+private: 
+		
+		template < typename F > int _Iterate(node_t* node, F f)
+		{
+			int count = node->count;
 
-		if (!count)
-			return 0;
+			if (!count)
+				return 0;
 
-		for (int i = 0; i < (int)node->count; i++)
-			if (f(node->pointers[i]))
-				return i;
+			for (int i = 0; i < (int)node->count; i++)
+				if (f(node->pointers[i]))
+					return i;
 
-		for (int i = 0; i < link_c; i++)
-			if (node->links[i])
-				count += _Iterate(&io->template Lookup<node_t>((uint64_t)node->links[i]), f);
+			for (int i = 0; i < link_c; i++)
+				if (node->links[i])
+					count += _Iterate(&io->template Lookup<node_t>((uint64_t)node->links[i]), f);
 
-		return count;
-	}
+			return count;
+		}
 
-	public: template < typename F > int Iterate(F f)
-	{
-		if (!root)
-			return 0;
-		else
-			return _Iterate(f);
-	}
+public: 
+		
+		template < typename F > int Iterate(F f)
+		{
+			if (!Root())
+				return 0;
+			else
+				return _Iterate(f);
+		}
 
+		pointer_t* Find(const key_t& k)
+		{
+			node_t* current = Root();
 
-		  pointer_t* Find(const key_t& k)
-		  {
-			  node_t* current = root;
+			if (!current)
+				return nullptr;
 
-			  if (!root)
-				  return nullptr;
+			node_t* next = nullptr;
 
-			  node_t* next = nullptr;
+			while (current)
+			{
+				pointer_t* pr;
+				int result = current->Find(k, &pr);
 
-			  while (current)
-			  {
-				  pointer_t* pr;
-				  int result = current->Find(k, &pr);
+				if (!result)
+					return pr;
+				else
+				{
+					result--;
 
-				  if (!result)
-					  return pr;
-				  else
-				  {
-					  result--;
+					next = &io->template Lookup<node_t>(current->links[result]);
 
-					  next = &io->template Lookup<node_t>(current->links[result]);
+					if (!next)
+						return nullptr;
+					else
+						current = next;
+				}
+			}
 
-					  if (!next)
-						  return nullptr;
-					  else
-						  current = next;
-				  }
-			  }
+			return nullptr;
+		}
 
-			  return nullptr;
-		  }
+		pair<pointer_t*, bool> Insert(const key_t& k, const pointer_t& p)
+		{
+			node_t* current = Root();
+			link_t current_id = root_n;
 
-		  pair<pointer_t*, bool> Insert(const key_t& k, const pointer_t& p)
-		  {
-			  node_t* current = root;
+			if (!current)
+				return { nullptr,false };
 
-			  if (!current)
-				  return { nullptr,false };
+			node_t* next = nullptr;
 
-			  node_t* next = nullptr;
+			while (current)
+			{
+				pair<pointer_t*, bool> overwrite;
+				int result = current->Insert(k, p, overwrite);
 
-			  while (current)
-			  {
-				  pair<pointer_t*, bool> overwrite;
-				  int result = current->Insert(k, p, overwrite);
+				if (!result)
+					return overwrite;
+				else
+				{
+					result--;
 
-				  if (!result)
-					  return overwrite;
-				  else
-				  {
-					  result--;
+					next = (current->links[result]) ? &io->template Lookup<node_t>(current->links[result]) : nullptr;
 
-					  next = (current->links[result]) ? &io->template Lookup<node_t>(current->links[result]) : nullptr;
+					if (!next)
+					{
+						next = &io->template Allocate<node_t>();
 
-					  if (!next)
-					  {
-						  next = &io->template Allocate<node_t>();
-						  current->links[result] = io->template Index<node_t>(*next);
-					  }
+						//If the file was remapped, then this must be refreshed
+						current = &io->template Lookup<node_t>(current_id);
 
-					  current = next;
-				  }
-			  }
+						current->links[result] = io->template Index<node_t>(*next);
+					}
 
-			  return { nullptr,false };
-		  }
+					current_id = current->links[result];
+					current = next;
+				}
+			}
 
-		  int Delete(const key_t& k)
-		  {
-			  return -1;
-			  /*BTreeNode * current = NULL;
+			return { nullptr,false };
+		}
 
-			  if (*_this->root == 0)
-				  return -1;
-			  else
-				  current = (BTreeNode*)Recycler_Lookup(_this->rcyc, (*_this->root) - 1);
+		int Delete(const key_t& k)
+		{
+			return -1;
+			/*BTreeNode * current = NULL;
 
-			  BTreeNode * next = NULL;
+			if (*_this->root == 0)
+				return -1;
+			else
+				current = (BTreeNode*)Recycler_Lookup(_this->rcyc, (*_this->root) - 1);
 
-			  while (current)
-			  {
-				  uint32_t overwrite;
-				  int result = Node_Insert(current, (BTreeKey*)k, (uint32_t)-1, &overwrite);
+			BTreeNode * next = NULL;
 
-				  if (overwrite != (uint32_t)-1)
-					  Recycler_Delete(_this->rcyc, overwrite);
+			while (current)
+			{
+				uint32_t overwrite;
+				int result = Node_Insert(current, (BTreeKey*)k, (uint32_t)-1, &overwrite);
 
-				  if (!result)
-					  return 0;
-				  else
-				  {
-					  result--;
+				if (overwrite != (uint32_t)-1)
+					Recycler_Delete(_this->rcyc, overwrite);
 
-					  next = (BTreeNode*)Recycler_Lookup(_this->rcyc, current->links[result]);
+				if (!result)
+					return 0;
+				else
+				{
+					result--;
 
-					  if (!next)
-						  return -1;
-					  else
-						  current = next;
-				  }
-			  }
+					next = (BTreeNode*)Recycler_Lookup(_this->rcyc, current->links[result]);
 
-			  return -1;*/
-		  }
+					if (!next)
+						return -1;
+					else
+						current = next;
+				}
+			}
+
+			return -1;*/
+		}
 	};
 }
