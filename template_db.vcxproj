@@ -217,19 +217,6 @@
     <ClCompile Include="tdb.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="db\Bin.hpp" />
-    <ClInclude Include="db\BTree.hpp" />
-    <ClInclude Include="db\Chat.hpp" />
-    <ClInclude Include="db\constructs.hpp" />
-    <ClInclude Include="db\Database.hpp" />
-    <ClInclude Include="db\Directory.hpp" />
-    <ClInclude Include="db\hex.hpp" />
-    <ClInclude Include="db\Keys.hpp" />
-    <ClInclude Include="db\mapping.hpp" />
-    <ClInclude Include="db\memory.hpp" />
-    <ClInclude Include="db\recycling.hpp" />
-    <ClInclude Include="db\db.hpp" />
-    <ClInclude Include="db\Standard.hpp" />
     <ClInclude Include="gsl-lite.hpp" />
     <ClInclude Include="mio.hpp" />
     <ClInclude Include="tdb\btree.hpp" />
@@ -240,6 +227,9 @@
     <ClInclude Include="tdb\mapping.hpp" />
     <ClInclude Include="tdb\recycling.hpp" />
     <ClInclude Include="tdb\test.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -163,6 +163,12 @@ namespace tdb
 
 		template < typename T > T & Lookup(uint64_t idx)
 		{
+			//With multiple readers and a single writter the map can be undersized.
+			//
+
+			if (idx * sizeof(Unit) + sizeof(_Header) > M::size())
+				return *((T*) nullptr);
+
 			return *((T*)&(((Unit*)(M::data() + sizeof(_Header)))[idx]));
 		}
 

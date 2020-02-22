@@ -13,53 +13,11 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="db">
-      <UniqueIdentifier>{04a36d48-4dfb-453b-9213-bdfea0a73d59}</UniqueIdentifier>
-    </Filter>
     <Filter Include="tdb">
       <UniqueIdentifier>{49fb1c8e-7e57-4f90-82ac-f6f621a5263b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="db\constructs.hpp">
-      <Filter>db</Filter>
-    </ClInclude>
-    <ClInclude Include="db\hex.hpp">
-      <Filter>db</Filter>
-    </ClInclude>
-    <ClInclude Include="db\mapping.hpp">
-      <Filter>db</Filter>
-    </ClInclude>
-    <ClInclude Include="db\memory.hpp">
-      <Filter>db</Filter>
-    </ClInclude>
-    <ClInclude Include="db\recycling.hpp">
-      <Filter>db</Filter>
-    </ClInclude>
-    <ClInclude Include="db\db.hpp">
-      <Filter>db</Filter>
-    </ClInclude>
-    <ClInclude Include="db\Bin.hpp">
-      <Filter>db</Filter>
-    </ClInclude>
-    <ClInclude Include="db\BTree.hpp">
-      <Filter>db</Filter>
-    </ClInclude>
-    <ClInclude Include="db\Chat.hpp">
-      <Filter>db</Filter>
-    </ClInclude>
-    <ClInclude Include="db\Database.hpp">
-      <Filter>db</Filter>
-    </ClInclude>
-    <ClInclude Include="db\Directory.hpp">
-      <Filter>db</Filter>
-    </ClInclude>
-    <ClInclude Include="db\Keys.hpp">
-      <Filter>db</Filter>
-    </ClInclude>
-    <ClInclude Include="db\Standard.hpp">
-      <Filter>db</Filter>
-    </ClInclude>
     <ClInclude Include="tdb\hash.hpp">
       <Filter>tdb</Filter>
     </ClInclude>
@@ -95,5 +53,8 @@
     <ClCompile Include="tdb.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
   </ItemGroup>
 </Project>

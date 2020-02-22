@@ -98,6 +98,11 @@ TEST_CASE("100,000 Inserts", "[tdb::]")
 
 TEST_CASE("1,000,000 MapReduce8 Threaded Inserts", "[tdb::]")
 {
+    //Note about this test, there is not currently a mutex protecting the growth and allocation of blocks.
+    //This test correctly identifies that this causes trouble about 10% of the time.
+    //This object works well with read IO but needs to be fixed for writes.
+    //
+
     constexpr auto lim = 1000 * 1000;
 
     std::filesystem::remove_all("db.dat");
@@ -108,27 +113,46 @@ TEST_CASE("1,000,000 MapReduce8 Threaded Inserts", "[tdb::]")
         auto& keys = singleton<std::array<RandomKeyT<Key32>, lim>>(); // Heap
 
         std::atomic<size_t> identity = 0;
+        std::atomic<size_t> done = 0;
         std::array<size_t, 8> inserts = { 0,0,0,0,0,0,0,0 };
         std::array<size_t, 8> finds = { 0,0,0,0,0,0,0,0 };
 
         std::for_each_n(std::execution::par_unseq, keys.data(), 8, [&](auto v)
         {
             auto d = identity++;
+            size_t li = 0, lf = 0;
 
             for (size_t i = 0; i < lim; i++)
             {
-                if (dx.Insert(keys[i], uint64_t(i), d).first)
+                auto res = dx.Insert(keys[i], uint64_t(i), d);
+                if (res.first)
+                {
                     inserts[d]++;
+                    li++;
+                }
+                if (res.second)
+                {
+                    std::cout << "OVERWRITE" << std::endl;
+                }
             }         
 
             for (size_t i = 0; i < lim; i++)
             {
                 if (dx.Find(keys[i], d))
+                {
                     finds[d]++;
+                    lf++;
+                }
             } 
+
+            if (li != lf)
+                std::cout << "SANITY CHECK FAILED" << std::endl;
+
+            done++;
         });
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        //In some cases the finds && inserts are not flushed. Need to actually atomically load from those memory addresses. This also seems to work.
+        while(done != 8) std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         auto total_insert = std::accumulate(inserts.begin(), inserts.end(),0);
         auto total_find = std::accumulate(finds.begin(), finds.end(), 0);
@@ -143,12 +167,12 @@ TEST_CASE("1,000,000 MapReduce8 Threaded Inserts", "[tdb::]")
 TEST_CASE("Multi-Threaded Access", "[tdb::]")
 {
     constexpr auto lim = 6 * 1000;
-    constexpr auto readers = 3;
+    constexpr auto readers = 4;
 
     {
         std::filesystem::remove_all("db.dat");
 
-        SimpleLarge i("db.dat");
+        Simple i("db.dat");
 
         auto dx = i.Index();
 
@@ -175,14 +199,20 @@ TEST_CASE("Multi-Threaded Access", "[tdb::]")
                 size_t i;
                 do
                 {
+                    Simple li("db.dat");
+
+                    auto ldx = li.Index();
+
                     i = 0;
                     for (; i < lim; i++)
                     {
-                        if (!dx.Find(keys[i]))
+                        if (!ldx.Find(keys[i]))
                             break;
                     }
                 } while (i != lim);
             });
+
+        wr.join();
 
         for (auto& t : tl)
             t.join();
