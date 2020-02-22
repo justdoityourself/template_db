@@ -45,12 +45,17 @@ namespace tdb
 			return tables;
 		}
 
-		template <size_t I > auto Table()
+		template <size_t I > auto Table() const
 		{
 			return get<I>(tables);
 		}
 
-		auto Index()
+		auto ReadWriteIndex()
+		{
+			return get<0>(tables);
+		}
+
+		const auto & ReadOnlyIndex() const
 		{
 			return get<0>(tables);
 		}

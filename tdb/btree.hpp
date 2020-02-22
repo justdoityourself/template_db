@@ -233,7 +233,7 @@ namespace tdb
 		R* io = nullptr;
 		link_t root_n;
 
-		auto Root()
+		auto Root() const
 		{
 			return &io->template Lookup<node_t>(root_n);
 		}
@@ -259,7 +259,7 @@ namespace tdb
 
 private: 
 		
-		template < typename F > int _Iterate(node_t* node, F f)
+		template < typename F > int _Iterate(node_t* node, F f) const
 		{
 			int count = node->count;
 
@@ -279,7 +279,7 @@ private:
 
 public: 
 		
-		template < typename F > int Iterate(F f)
+		template < typename F > int Iterate(F f) const
 		{
 			if (!Root())
 				return 0;
@@ -287,7 +287,7 @@ public:
 				return _Iterate(f);
 		}
 
-		pointer_t* Find(const key_t& k)
+		pointer_t* Find(const key_t& k) const
 		{
 			node_t* current = Root();
 
@@ -360,10 +360,10 @@ public:
 			return { nullptr,false };
 		}
 
-		int Delete(const key_t& k)
+		/*int Delete(const key_t& k)
 		{
 			return -1;
-			/*BTreeNode * current = NULL;
+			BTreeNode * current = NULL;
 
 			if (*_this->root == 0)
 				return -1;
@@ -395,7 +395,7 @@ public:
 				}
 			}
 
-			return -1;*/
-		}
+			return -1;
+		}*/
 	};
 }

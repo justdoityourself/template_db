@@ -21,9 +21,7 @@ TEST_CASE("Simple Index", "[tdb::]")
     std::filesystem::remove_all("db.dat");
 
     {
-        Simple i("db.dat");
-
-        auto dx = i.Index();
+        SmallIndex dx("db.dat");
 
         auto k = Key32(string_view("Test"));
 
@@ -41,8 +39,7 @@ TEST_CASE("10,000 Inserts", "[tdb::]")
     std::filesystem::remove_all("db.dat");
 
     {
-        Simple i("db.dat");
-        auto dx = i.Index();
+        SmallIndex dx("db.dat");
 
         std::array<RandomKeyT<Key32>, lim> keys;
 
@@ -76,8 +73,7 @@ TEST_CASE("100,000 Inserts", "[tdb::]")
     std::filesystem::remove_all("db.dat");
 
     {
-        SimpleLarge i("db.dat");
-        auto dx = i.Index();
+        LargeIndex dx("db.dat");
 
         auto& keys = singleton<std::array<RandomKeyT<Key32>, lim>>(); // Heap
 
@@ -96,7 +92,7 @@ TEST_CASE("100,000 Inserts", "[tdb::]")
     std::filesystem::remove_all("db.dat");
 }
 
-TEST_CASE("1,000,000 MapReduce8 Threaded Inserts", "[tdb::]")
+TEST_CASE("1,000,000 MapReduceT<8> Threaded Inserts", "[tdb::]")
 {
 
     constexpr auto M = 8;
@@ -167,14 +163,12 @@ TEST_CASE("1,000,000 MapReduce8 Threaded Inserts", "[tdb::]")
 TEST_CASE("Multi-Threaded Access", "[tdb::]")
 {
     constexpr auto lim = 6 * 1000;
-    constexpr auto readers = 4;
+    constexpr auto readers = 16;
 
     {
         std::filesystem::remove_all("db.dat");
 
-        Simple i("db.dat");
-
-        auto dx = i.Index();
+        SmallIndex dx("db.dat");
 
         auto& keys = singleton<std::array<RandomKeyT<Key32>, lim>>(); // Heap
 
@@ -199,9 +193,8 @@ TEST_CASE("Multi-Threaded Access", "[tdb::]")
                 size_t i;
                 do
                 {
-                    Simple li("db.dat");
-
-                    auto ldx = li.Index();
+                    //We can open as many of these as many const handles as we want, they will just share the map.
+                    SmallIndexReadOnly ldx("db.dat");
 
                     i = 0;
                     for (; i < lim; i++)
