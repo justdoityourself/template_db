@@ -25,6 +25,8 @@ namespace tdb
 	public:
 		_Database() {}
 
+		using R::Refresh;
+
 		void Validate()
 		{
 			std::apply([&](auto& ...x) {(ValidateTable(x), ...); }, tables);

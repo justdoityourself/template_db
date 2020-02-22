@@ -24,6 +24,8 @@ namespace tdb
 
 	public:
 
+		using M::Refresh;
+
 		static uint64_t AvailableSpace(uint64_t used)
 		{
 			return sizeof(Unit) - used % sizeof(Unit);

@@ -74,6 +74,12 @@ namespace tdb
 		string_view Name() { return name; }
 		void Close() { map.unmap(); }
 
+		void Refresh()
+		{
+			if (Header().size > map.size())
+				Reopen();
+		}
+
 		void Reopen()
 		{
 			map.unmap();
