@@ -1,7 +1,7 @@
 # template_db
 A template database written Modern C++ from the ground up.
 
-##Getting Started
+## Getting Started
 
 ```cpp
 #include "tbd/database.hpp"
@@ -27,6 +27,6 @@ for (size_t i = 0; i < lim; i++)
 
 ```
 
-##Todo
+## Todo
 * Tables
 
