@@ -107,7 +107,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\volcopy\cryptopp8.2;$(IncludePath)</IncludePath>
+    <IncludePath>..\volcopy\cryptopp8.2;..\d8u;$(IncludePath)</IncludePath>
     <LibraryPath>..\volcopy\cryptopp8.2\CryptoPP\x64\Output\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

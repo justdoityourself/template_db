@@ -24,7 +24,7 @@ namespace tdb
 
 	public:
 
-		using M::Refresh;
+		using M::Stale;
 
 		static uint64_t AvailableSpace(uint64_t used)
 		{

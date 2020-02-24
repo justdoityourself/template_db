@@ -25,7 +25,7 @@ namespace tdb
 	public:
 		_Database() {}
 
-		using R::Refresh;
+		using R::Stale;
 
 		void Validate()
 		{

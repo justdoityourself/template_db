@@ -2,7 +2,10 @@
 
 #pragma once
 
+#include <utility>
 #include <array>
+#include <list>
+#include <mutex>
 
 #include "host.hpp"
 #include "btree.hpp"
@@ -25,6 +28,11 @@ namespace tdb
 			db.Open(name);
 		}
 
+		bool Stale(uint64_t size = 0) const
+		{
+			return db.Stale(size);
+		}
+
 		template <typename K, typename V> auto Insert(const K& k, const V& v)
 		{
 			return db.Table<0>().Insert(k, v);
@@ -38,6 +46,9 @@ namespace tdb
 
 	using SmallIndex = Index<>;
 	using SmallIndexReadOnly = const Index<>;
+
+	using MediumIndex = Index<8*1024*1024>;
+	using MediumIndexReadOnly = const Index<8 * 1024 * 1024>;
 
 	using LargeIndex = Index<>;
 	using LargeIndexReadOnly = const Index<64*1024*1024>;
@@ -72,6 +83,137 @@ namespace tdb
 				return (uint64_t*)nullptr;
 
 			return dbr[map].Table<0>().Find(k);
+		}
+	};
+
+	template <typename T> class SafeWriter
+	{
+		std::mutex ml;
+		T writer;
+
+		struct Lifetime
+		{
+			SafeWriter<T> & parent;
+
+			Lifetime(SafeWriter<T>& _parent) : parent(_parent)
+			{
+				parent.ml.lock();
+			}
+
+			~Lifetime()
+			{
+				parent.ml.unlock();
+			}
+
+			T& GetWriter () { return parent.writer; }
+		};
+
+	public:
+		SafeWriter(std::string_view name) : writer(name) {}
+
+		Lifetime GetLock() { return Lifetime(*this); }
+	};
+
+	template <typename T, size_t MIN=3> class ViewManager
+	{
+		std::mutex ml;
+		std::list<std::pair<std::atomic<size_t>,T>> maps;
+		std::string name;
+
+		struct Lifetime
+		{
+			std::pair<std::atomic<size_t>, T>& parent;
+
+			Lifetime(std::pair<std::atomic<size_t>, T>& _parent) : parent(_parent) 
+			{
+				parent.first++;
+			}
+
+			~Lifetime() { parent.first--; }
+
+			T& Map () { return parent.second; }
+		};
+
+	public:
+		ViewManager(std::string_view _name) : name(_name)
+		{
+			maps.emplace_back(0, name);
+		}
+
+		Lifetime View(uint64_t size=0)
+		{
+			std::lock_guard<std::mutex> l(ml);
+
+			if (maps.back().second.Stale(size))
+			{
+				maps.emplace_back(0, name);
+
+				//House Keeping:
+				//
+
+				while (maps.size() > MIN && maps.front().first.load() == 0)
+					maps.pop_front();
+			}
+
+			//Lockless safety conditions:
+			//
+
+			//MIN views, growth / stale rate, test stale before atomic inc.
+			//If all three of these conditions can happen in a few micro seconds then this breaks. Can't happen.
+			//
+
+			return Lifetime(maps.back());
+		}
+
+		//Target offset instead of total size:
+		//
+
+		Lifetime Fixed(uint64_t offset)
+		{
+			std::lock_guard<std::mutex> l(ml);
+
+			if (maps.back().second.size() < offset) 
+			{
+				maps.emplace_back(0, name);
+
+				while (maps.size() > MIN&& maps.front().first.load() == 0)
+					maps.pop_front();
+			}
+
+			return Lifetime(maps.back());
+		}
+
+		auto Alloc(uint64_t size = 0)
+		{
+			std::lock_guard<std::mutex> l(ml);
+
+			if (maps.back().second.Stale(size))
+			{
+				maps.emplace_back(0, name);
+
+				while (maps.size() > MIN&& maps.front().first.load() == 0)
+					maps.pop_front();
+			}
+
+			//Lockless safety conditions:
+			//
+
+			//MIN views, growth / stale rate, test stale before atomic inc.
+			//If all three of these conditions can happen in a few micro seconds then this breaks. Can't happen.
+			//
+
+			return std::make_pair(maps.back().second.Allocate(size),Lifetime(maps.back()));
+		}
+	};
+
+
+	template <typename T> class MakeHeader
+	{
+	public:
+		MakeHeader(std::string_view name)
+		{
+			if (!std::filesystem::exists(name))
+				ofstream(name, ios::out | ios::binary).write((const char*)&T(), sizeof(T));
 		}
 	};
 }

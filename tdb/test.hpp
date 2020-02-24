@@ -10,11 +10,12 @@
 #include <numeric>
 
 #include "../catch.hpp"
+#include "d8u/util.hpp"
 
 #include "database.hpp"
 
 using namespace tdb;
-
+using namespace d8u::util;
 
 TEST_CASE("Simple Index", "[tdb::]")
 {
@@ -57,13 +58,6 @@ TEST_CASE("10,000 Inserts", "[tdb::]")
 
 
     std::filesystem::remove_all("db.dat");
-}
-
-template <typename T> T& singleton()
-{
-    static T t;
-
-    return t;
 }
 
 TEST_CASE("100,000 Inserts", "[tdb::]")

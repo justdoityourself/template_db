@@ -54,7 +54,7 @@ namespace tdb
 			uint64_t _align[6] = { 0 };
 		};
 
-		_Header & Header()
+		_Header & Header() const
 		{
 			return *((_Header*)map.data());
 		}
@@ -74,10 +74,9 @@ namespace tdb
 		string_view Name() { return name; }
 		void Close() { map.unmap(); }
 
-		void Refresh()
+		bool Stale(uint64_t size=0) const
 		{
-			if (Header().size > map.size())
-				Reopen();
+			return Header().size + size > map.size();
 		}
 
 		void Reopen()

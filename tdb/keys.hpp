@@ -68,6 +68,9 @@ namespace tdb
 		const uint8_t* data() const { return (uint8_t*)this; }
 		size_t size() const { return sizeof(*this); }
 
+		const uint8_t* begin() const { return data(); }
+		const uint8_t* end() const { return data() + size(); }
+
 		T1 first;
 		T2 second;
 	};
