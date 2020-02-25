@@ -15,12 +15,30 @@
 namespace tdb
 {
 	template <size_t S> using _R = _Recycling< _MapFile<S>, 64 * 1024 >;
+	template <size_t S> using _SGR = _Recycling< _MapList<S>, 64 * 1024 >;
 	template <size_t S> using _T = _BTree<_R<S>, OrderedListPointer >;
-	template <size_t S> using _Index = _Database< _R<S>, _T<S> >;
+	template <size_t S> using _SGT = _BTree<_SGR<S>, OrderedListPointer >;
+	template <size_t S, size_t F> using _F = _BTree<_R<S>, FuzzyHashPointerT<F> >;
+	template <size_t S, size_t F> using _SGF = _BTree<_SGR<S>, FuzzyHashPointerT<F> >;
 
-	template < size_t G = 1024 * 1024 > class Index
+	template <size_t S> using _R256 = _Recycling< _MapFile<S>, 256 * 1024 >;
+	template <size_t S> using _SGR256 = _Recycling< _MapList<S>, 256 * 1024 >;
+	template <size_t S> using _T256 = _BTree<_R256<S>, OrderedListPointer >;
+	template <size_t S> using _SGT256 = _BTree<_SGR256<S>, OrderedListPointer >;
+	template <size_t S, size_t F> using _F256 = _BTree<_R256<S>, BigFuzzyHashPointerT<F> >;
+	template <size_t S, size_t F> using _SGF256 = _BTree<_SGR256<S>, BigFuzzyHashPointerT<F> >;
+
+	template <size_t S> using _IndexSortedList = _Database< _R<S>, _T<S> >;
+	template <size_t S, size_t F = 4> using _IndexFuzzyHash = _Database< _R<S>, _F<S,F> >;
+	template <size_t S, size_t F = 4> using _BigIndexFuzzyHash = _Database< _R256<S>, _F256<S, F> >;
+
+	template <size_t S> using _IndexSortedListSafe = _Database< _SGR<S>, _SGT<S> >;
+	template <size_t S, size_t F = 4> using _IndexFuzzyHashSafe = _Database< _SGR<S>, _SGF<S, F> >;
+	template <size_t S, size_t F = 4> using _BigIndexFuzzyHashSafe = _Database< _SGR256<S>, _SGF256<S, F> >;
+
+	template < size_t G = 1024 * 1024, typename INDEX = _IndexSortedList<G> > class Index
 	{
-		_Index<G> db;
+		INDEX db;
 
 	public:
 		Index(string_view name)
@@ -42,6 +60,16 @@ namespace tdb
 		{
 			return db.Table<0>().Find(k);
 		}
+
+		template <typename K, typename V> auto InsertLock(const K& k, const V& v)
+		{
+			return db.Table<0>().InsertLock(k, v);
+		}
+
+		template <typename K> auto FindLock(const K& k) const
+		{
+			return db.Table<0>().FindLock(k);
+		}
 	};
 
 	using SmallIndex = Index<>;
@@ -50,12 +78,36 @@ namespace tdb
 	using MediumIndex = Index<8*1024*1024>;
 	using MediumIndexReadOnly = const Index<8 * 1024 * 1024>;
 
-	using LargeIndex = Index<>;
+	using LargeIndex = Index<64 * 1024 * 1024>;
 	using LargeIndexReadOnly = const Index<64*1024*1024>;
 
-	template < size_t C = 8, size_t G = 8*1024*1024 > class MapReduceT
+	using LargeIndexS = Index<64 * 1024 * 1024, _IndexSortedListSafe<64 * 1024 * 1024>>;
+	using LargeIndexReadOnlyS = const Index<64 * 1024 * 1024, _IndexSortedListSafe<64 * 1024 * 1024>>;
+
+	using SmallHashmap = Index<1024 * 1024, _IndexFuzzyHash<1024 * 1024>>;
+	using SmallHashmapReadOnly = const Index<1024 * 1024, _IndexFuzzyHash<1024 * 1024>>;
+
+	using MediumHashmap = Index<8 * 1024 * 1024, _IndexFuzzyHash<8 * 1024 * 1024>>;
+	using MediumHashmapReadOnly = const Index<8 * 1024 * 1024, _IndexFuzzyHash<8 * 1024 * 1024>>;
+
+	using LargeHashmap = Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024>>;
+	using LargeHashmapReadOnly = const Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024>>;
+
+	using LargeHashmapSafe = Index<64 * 1024 * 1024, _IndexFuzzyHashSafe<64 * 1024 * 1024>>;
+	using LargeHashmapReadOnlySafe = const Index<64 * 1024 * 1024, _IndexFuzzyHashSafe<64 * 1024 * 1024>>;
+
+	using LargeHashmapS = Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024, 1>>;
+	using LargeHashmapReadOnlyS = const Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024,1>>;
+
+	using LargeHashmapM = Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024, 2>>;
+	using LargeHashmapReadOnlyM = const Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024, 2>>;
+
+	using LargeHashmapL = Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024,8>>;
+	using LargeHashmapReadOnlyL = const Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024,8>>;
+
+	template < size_t C = 8, size_t G = 8*1024*1024, typename INDEX = _IndexSortedList<G> > class MapReduceT
 	{
-		std::array<_Index<G>, C> dbr;
+		std::array<INDEX, C> dbr;
 
 	public:
 		MapReduceT(string_view name) 

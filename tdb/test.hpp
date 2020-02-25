@@ -33,6 +33,22 @@ TEST_CASE("Simple Index", "[tdb::]")
     std::filesystem::remove_all("db.dat");
 }
 
+TEST_CASE("Simple Hashmap", "[tdb::]")
+{
+    std::filesystem::remove_all("db.dat");
+
+    {
+        SmallHashmap dx("db.dat");
+
+        auto k = Key32(string_view("Test"));
+
+        CHECK(nullptr != dx.Insert(k, uint64_t(99)).first);
+        CHECK(nullptr != dx.Find(k));
+    }
+
+    std::filesystem::remove_all("db.dat");
+}
+
 TEST_CASE("10,000 Inserts", "[tdb::]")
 {
     constexpr auto lim = 10 * 1000;
@@ -52,10 +68,36 @@ TEST_CASE("10,000 Inserts", "[tdb::]")
         for (size_t i = 0; i < lim; i++)
         {
             auto res = dx.Find(keys[i]);
+
             CHECK((nullptr != res && *res == i));
         }
     }
 
+    std::filesystem::remove_all("db.dat");
+}
+
+TEST_CASE("10,000 Hashmap Inserts", "[tdb::]")
+{
+    constexpr auto lim = 10 * 1000;
+
+    std::filesystem::remove_all("db.dat");
+
+    {
+        SmallHashmap dx("db.dat");
+
+        std::array<RandomKeyT<Key32>, lim> keys;
+
+        for (size_t i = 0; i < lim; i++)
+        {
+            CHECK(nullptr != dx.Insert(keys[i], uint64_t(i)).first);
+        }
+
+        for (size_t i = 0; i < lim; i++)
+        {
+            auto res = dx.Find(keys[i]);
+            CHECK((nullptr != res && *res == i));
+        }
+    }
 
     std::filesystem::remove_all("db.dat");
 }
@@ -86,9 +128,132 @@ TEST_CASE("100,000 Inserts", "[tdb::]")
     std::filesystem::remove_all("db.dat");
 }
 
+TEST_CASE("1,000,000 Hashmap Threaded", "[tdb::]")
+{
+    constexpr auto lim = 1000 * 1000;
+
+    std::filesystem::remove_all("db.dat");
+
+    {
+        LargeHashmapSafe dx("db.dat");
+
+        auto& keys = singleton<std::array<RandomKeyT<Key32>, lim>>(); // Heap
+
+        std::atomic<size_t> insert = 0;
+
+        std::for_each(std::execution::par, keys.begin(), keys.end(), [&](auto& k)
+        {
+            if (dx.InsertLock(k, uint64_t(99)).first)
+                insert++;
+        });
+
+        CHECK(insert == lim);
+
+        std::atomic<size_t> find = 0;
+
+        std::for_each(std::execution::par, keys.begin(), keys.end(), [&](auto& k)
+        {
+            auto res = dx.FindLock(k);
+            if ((nullptr != res && *res == 99))
+                find++;
+        });
+
+        CHECK(find == lim);
+    }
+
+    std::filesystem::remove_all("db.dat");
+}
+
+TEST_CASE("1,000,000 Inserts Threaded", "[tdb::]")
+{
+    constexpr auto lim = 1000 * 1000;
+
+    std::filesystem::remove_all("db.dat");
+
+    {
+        LargeIndexS dx("db.dat");
+
+        auto& keys = singleton<std::array<RandomKeyT<Key32>, lim>>(); // Heap
+
+        std::atomic<size_t> insert = 0;
+
+        std::for_each(std::execution::par, keys.begin(), keys.end(), [&](auto &k)
+        {
+            if (dx.InsertLock(k, uint64_t(99)).first) 
+                insert++;
+        });
+
+        CHECK(insert == lim);
+
+        std::atomic<size_t> find = 0;
+
+        std::for_each(std::execution::par, keys.begin(), keys.end(), [&](auto& k)
+        {
+            auto res = dx.FindLock(k);
+            if ((nullptr != res && *res == 99))
+                find++;
+        });
+
+        CHECK(find == lim);
+    }
+
+    std::filesystem::remove_all("db.dat");
+}
+
+TEST_CASE("100,000 Inserts Hashmap", "[tdb::]")
+{
+    constexpr auto lim = 100 * 1000;
+
+    std::filesystem::remove_all("db.dat");
+
+    {
+        LargeHashmap dx("db.dat");
+
+        auto& keys = singleton<std::array<RandomKeyT<Key32>, lim>>(); // Heap
+
+        for (size_t i = 0; i < lim; i++)
+        {
+            CHECK(nullptr != dx.Insert(keys[i], uint64_t(i)).first);
+        }
+
+        for (size_t i = 0; i < lim; i++)
+        {
+            auto res = dx.Find(keys[i]);
+            CHECK((nullptr != res && *res == i));
+        }
+    }
+
+    std::filesystem::remove_all("db.dat");
+}
+
+TEST_CASE("1,000000 Inserts Hashmap", "[tdb::]")
+{
+    constexpr auto lim = 1000 * 1000;
+
+    std::filesystem::remove_all("db.dat");
+
+    {
+        LargeHashmap dx("db.dat");
+
+        auto& keys = singleton<std::array<RandomKeyT<Key32>, lim>>(); // Heap
+
+        for (size_t i = 0; i < lim; i++)
+        {
+            CHECK(nullptr != dx.Insert(keys[i], uint64_t(i)).first);
+        }
+
+        for (size_t i = 0; i < lim; i++)
+        {
+            auto res = dx.Find(keys[i]);
+            CHECK((nullptr != res && *res == i));
+        }
+    }
+
+    std::filesystem::remove_all("db.dat");
+}
+
 TEST_CASE("1,000,000 MapReduceT<8> Threaded Inserts", "[tdb::]")
 {
-
     constexpr auto M = 8;
     constexpr auto lim = 1000 * 1000;
 

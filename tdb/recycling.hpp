@@ -22,6 +22,16 @@ namespace tdb
 			uint64_t _align[4] = { 0 };
 		};
 
+		struct _HeaderLock
+		{
+			std::atomic<uint64_t> count = 0;
+			std::atomic<uint64_t> free = null_t;
+			std::atomic<uint64_t> inuse = 0;
+			std::atomic<uint64_t> time = 0;
+
+			uint64_t _align[4] = { 0 };
+		};
+
 	public:
 
 		using M::Stale;
@@ -40,7 +50,12 @@ namespace tdb
 
 		_Header & Header()
 		{
-			return *((_Header*)M::data());
+			return *((_Header*)M::offset(0));
+		}
+
+		_HeaderLock& HeaderLock()
+		{
+			return *((_HeaderLock*)M::offset(0));
 		}
 
 		_Recycling() {}
@@ -60,7 +75,7 @@ namespace tdb
 
 		Unit & Root()
 		{
-			return *((Unit*)(M::data() + sizeof(_Header)));
+			return *((Unit*)M::offset(sizeof(_Header)));
 		}
 
 		bool InvalidIndex(uint64_t idx)
@@ -73,7 +88,7 @@ namespace tdb
 			if (InvalidIndex(idx))
 				throw out_of_range("The specified index exceeds current range.");
 
-			return Root()[idx];
+			return *((Unit*)M::offset(sizeof(_Header) + sizeof(Unit) * idx));
 		}
 
 		Unit & AllocateUnit()
@@ -100,7 +115,8 @@ namespace tdb
 
 		uint64_t IndexUnit(Unit & u)
 		{
-			return (uint64_t)(&u - &Root());
+			return (M::offset_of((uint8_t*)&u) - sizeof(_Header)) / sizeof(Unit);
+			//return (uint64_t)(&u - &Root());
 		}
 
 		void FreeUnit(Unit & u)
@@ -127,6 +143,14 @@ namespace tdb
 			return (Unit*)M::Allocate(sizeof(Unit)*c).first;
 		}
 
+		Unit* AllocateSpanLock(uint64_t c)
+		{
+			HeaderLock().count += c;
+			HeaderLock().inuse += c;
+
+			return (Unit*)M::AllocateLock(sizeof(Unit) * c).first;
+		}
+
 		uint64_t MapLength(uint64_t l)
 		{
 			return l / sizeof(Unit) + ((l % sizeof(Unit)) ? 1 : 0);
@@ -140,6 +164,11 @@ namespace tdb
 		uint8_t* Allocate(uint64_t l)
 		{
 			return (uint8_t*)AllocateSpan(MapLength(l));
+		}
+
+		uint8_t* AllocateLock(uint64_t l)
+		{
+			return (uint8_t*)AllocateSpanLock(MapLength(l));
 		}
 
 		void Free(uint8_t * p, const uint64_t l)
@@ -163,15 +192,19 @@ namespace tdb
 			return *((T*)p);
 		}
 
+		template < typename T > T& AllocateLock()
+		{
+			uint8_t* p = AllocateLock(sizeof(T));
+			new(p) T();
+
+			return *((T*)p);
+		}
+
 		template < typename T > T & Lookup(uint64_t idx)
 		{
-			//With multiple readers and a single writter the map can be undersized.
-			//
+			auto ptr = (T * )M::offset(sizeof(_Header) + idx * unit_t);
 
-			if (idx * sizeof(Unit) + sizeof(_Header) > M::size())
-				return *((T*) nullptr);
-
-			return *((T*)&(((Unit*)(M::data() + sizeof(_Header)))[idx]));
+			return *ptr;
 		}
 
 		template < typename T > uint64_t Index(const T & t)

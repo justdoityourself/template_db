@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "template_db", "template_db.
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Benchmark|x64 = Benchmark|x64
+		Benchmark|x86 = Benchmark|x86
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
@@ -15,6 +17,10 @@ Global
 		Test|x86 = Test|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5265FEC9-052D-45BB-B3F3-C384F66AF5EF}.Benchmark|x64.ActiveCfg = Benchmark|x64
+		{5265FEC9-052D-45BB-B3F3-C384F66AF5EF}.Benchmark|x64.Build.0 = Benchmark|x64
+		{5265FEC9-052D-45BB-B3F3-C384F66AF5EF}.Benchmark|x86.ActiveCfg = Benchmark|Win32
+		{5265FEC9-052D-45BB-B3F3-C384F66AF5EF}.Benchmark|x86.Build.0 = Benchmark|Win32
 		{5265FEC9-052D-45BB-B3F3-C384F66AF5EF}.Debug|x64.ActiveCfg = Debug|x64
 		{5265FEC9-052D-45BB-B3F3-C384F66AF5EF}.Debug|x64.Build.0 = Debug|x64
 		{5265FEC9-052D-45BB-B3F3-C384F66AF5EF}.Debug|x86.ActiveCfg = Debug|Win32

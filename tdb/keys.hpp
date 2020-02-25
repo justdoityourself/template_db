@@ -22,6 +22,37 @@ namespace tdb
 			HashT(*this, t);
 		}
 
+		void Zero()
+		{
+			auto p = (uint64_t*)this;
+
+			for (size_t i = 0; i < sizeof(*this); i += 8, p++)
+				(*p) = 0;
+		}
+
+		bool IsZero()
+		{
+			auto p = (uint64_t*)this;
+
+			for (size_t i = 0; i < sizeof(*this); i += 8, p++)
+				if (*p)
+					return false;
+
+			return true;
+		}
+
+		bool Equal(const KeyT& k)
+		{
+			auto p1 = (uint64_t*)this;
+			auto p2 = (uint64_t*)&k;
+
+			for (size_t i = 0; i < sizeof(*this); i += 8, p1++, p2++)
+				if (*p1 != *p2)
+					return false;
+
+			return true;
+		}
+
 		void Random()
 		{
 			auto p = (uint64_t*)this;
@@ -34,6 +65,8 @@ namespace tdb
 				(*p) <<= 32; //e() doesn't fill top dword of qword
 				(*p) += e();
 			}
+
+			HashT(*this, *this);
 		}
 
 		int Compare(const KeyT & p)

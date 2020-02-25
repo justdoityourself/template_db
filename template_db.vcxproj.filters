@@ -48,6 +48,9 @@
     <ClInclude Include="tdb\test.hpp">
       <Filter>tdb</Filter>
     </ClInclude>
+    <ClInclude Include="tdb\benchmark.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="tdb.cpp">
