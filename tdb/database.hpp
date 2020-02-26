@@ -138,6 +138,12 @@ namespace tdb
 		}
 	};
 
+
+	/*
+		These constructs are mostly not useful with the implementation of per-node locking and mapping lists.
+		Might be removed at some point.
+	*/
+
 	template <typename T> class SafeWriter
 	{
 		std::mutex ml;

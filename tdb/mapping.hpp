@@ -173,7 +173,7 @@ namespace tdb
 		}
 	};
 
-	template <uint64_t growsize_t = 1024 * 1024, size_t grace_t = 64> class _MapList
+	template <uint64_t growsize_t = 1024 * 1024, size_t grace_t = 64, size_t page_t = 64*1024> class _MapList
 	{
 		std::mutex ll;
 		std::list<mio::mmap_sink> list;
@@ -187,10 +187,10 @@ namespace tdb
 
 			uint64_t _align[6] = { 0 };
 
-			uint8_t ex[64 * 1024 - grace_t - 64];
+			uint8_t ex[page_t - grace_t - 64];
 		};
 
-		static_assert(sizeof(_Header) + grace_t == 64 * 1024);
+		static_assert(sizeof(_Header) + grace_t == page_t);
 
 		_Header& Header() const
 		{
@@ -212,12 +212,15 @@ namespace tdb
 		}
 
 	public:
+
 		void Flush() 
 		{ 
 			for(auto & map : list)
 				map.sync(); 
 		}
+
 		string_view Name() { return name; }
+
 		void Close() { list.clear(); }
 
 		bool Stale(uint64_t size = 0) const
@@ -228,6 +231,13 @@ namespace tdb
 				total += map.size();
 
 			return Header().size + size > total;
+		}
+
+		void Flatten()
+		{
+			std::lock_guard<std::mutex> lock(ll);
+
+			Reopen();
 		}
 
 		void Reopen()
@@ -315,6 +325,13 @@ namespace tdb
 			return 0;
 		}
 
+		pair<uint8_t*, uint64_t> AllocateAlign(uint64_t szof)
+		{
+			auto rem = szof % page_t;
+
+			return Allocate((rem) ? szof + page_t - rem : szof);
+		}
+
 		pair<uint8_t*, uint64_t> Allocate(uint64_t szof)
 		{
 			std::lock_guard<std::mutex> lock(ll);
@@ -327,6 +344,9 @@ namespace tdb
 
 		pair<uint8_t*, uint64_t> AllocateLock(uint64_t szof)
 		{
+			//All allocates of this object are locked
+			//
+
 			return Allocate(szof);
 		}
 

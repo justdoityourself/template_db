@@ -98,6 +98,16 @@ namespace tdb
 			return Compare(p) == 1;
 		}
 
+		uint8_t& operator[] (size_t dx)
+		{
+			return *(data() + dx);
+		}
+
+		const uint8_t& operator[] (size_t dx) const
+		{
+			return *(data() + dx);
+		}
+
 		const uint8_t* data() const { return (uint8_t*)this; }
 		size_t size() const { return sizeof(*this); }
 
