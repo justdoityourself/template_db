@@ -337,6 +337,12 @@ namespace tdb
 			std::lock_guard<std::mutex> lock(ll);
 
 			auto s = Header().size;
+
+			auto _start = s + sizeof(_Header);
+			auto _final = s + szof + sizeof(_Header);
+			if (_start < current && _final > current) //Block doesn't fit into map boundaries.
+				Resize(_final); //Move boundary to exact map beginning. Leaves zero block gap, page aligned so still can be iterated.
+
 			Resize(s + szof);
 
 			return make_pair(offset(s), s);
