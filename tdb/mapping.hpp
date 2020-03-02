@@ -10,38 +10,18 @@
 #include <fstream>
 #include <utility>
 
+#include "d8u/util.hpp"
+
 namespace tdb
 {
 	using namespace std;
 	using namespace gsl;
 
 	namespace fs = std::filesystem;
-
-	void empty_file(const string_view file)
-	{
-		ofstream fs(file, ios::out);
-	}
-
-	template <typename T> uint64_t append_file(const string_view file,const T & m)
-	{
-		ofstream fs(file, ios::out | fstream::app | ios::binary);
-		uint64_t result = fs.tellp();
-		fs.write((const char*)&m.length, sizeof(uint32_t));
-		fs.write((const char*)m.data(), m.size());
-
-		return result;
-	}
-
-	void empty_file1(const string_view file)
-	{
-		ofstream fout;
-		fout.open(file, ios::out);
-		fout << 'c';
-	}
+	using namespace d8u::util;
 
 
-
-	template <uint64_t growsize_t = 1024*1024> class _MapFile
+	template <uint64_t growsize_t = 1024*1024, size_t page_t = 64*1024> class _MapFile
 	{
 		mio::mmap_sink map;
 		string name;
@@ -69,7 +49,31 @@ namespace tdb
 				throw std::runtime_error(string("Failed to map ") + error.message());
 		}
 
+		uint64_t incidental_offset = 0;
+		gsl::span<uint8_t> incidental;
+
 	public:
+		std::pair<uint8_t*, uint64_t> Incidental(size_t s)
+		{
+			if (s > page_t)
+				return std::make_pair<nullptr, -1>;
+
+			if (s > incidental.size())
+			{
+				auto [pointer, offset] = Allocate(page_t);
+				incidental_offset = offset;
+				incidental = gsl::span<uint8_t>(pointer, page_t);
+			}
+
+			uint8_t* result = incidental.data();
+			uint64_t result_offset = incidental_offset;
+
+			incidental_offset += s;
+			incidental = gsl::span<uint8_t>(incidental.data() + s, incidental.size() - s);
+
+			return std::make_pair(result, result_offset);
+		}
+
 		void Flush() { map.sync(); }
 		string_view Name() { return name; }
 		void Close() { map.unmap(); }
@@ -211,7 +215,34 @@ namespace tdb
 			current += list.back().size();
 		}
 
+		uint64_t incidental_offset = 0;
+		gsl::span<uint8_t> incidental;
+
 	public:
+
+		//Allocate an unaligned fragment of mapped fil space:
+		//
+
+		std::pair<uint8_t*,uint64_t> Incidental(size_t s)
+		{
+			if (s > page_t)
+				return std::make_pair<nullptr, -1>;
+
+			if (s > incidental.size())
+			{
+				auto [pointer, offset] = Allocate(page_t);
+				incidental_offset = offset;
+				incidental = gsl::span<uint8_t>(pointer,page_t);
+			}
+
+			uint8_t* result = incidental.data();
+			uint64_t result_offset = incidental_offset;
+
+			incidental_offset += s;
+			incidental = gsl::span<uint8_t>(incidental.data()+s, incidental.size()-s);
+
+			return std::make_pair (result, result_offset);
+		}
 
 		void Flush() 
 		{ 

@@ -35,6 +35,7 @@ namespace tdb
 	public:
 
 		using M::Stale;
+		using M::Incidental;
 
 		static uint64_t AvailableSpace(uint64_t used)
 		{

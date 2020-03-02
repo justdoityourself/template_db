@@ -90,6 +90,9 @@ namespace tdb
 	using MediumHashmap = Index<8 * 1024 * 1024, _IndexFuzzyHash<8 * 1024 * 1024>>;
 	using MediumHashmapReadOnly = const Index<8 * 1024 * 1024, _IndexFuzzyHash<8 * 1024 * 1024>>;
 
+	using MediumHashmapSafe = Index<8 * 1024 * 1024, _IndexFuzzyHashSafe<8 * 1024 * 1024>>;
+	using MediumHashmapReadOnlySafe = const Index<8 * 1024 * 1024, _IndexFuzzyHashSafe<8 * 1024 * 1024>>;
+
 	using LargeHashmap = Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024>>;
 	using LargeHashmapReadOnly = const Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024>>;
 
