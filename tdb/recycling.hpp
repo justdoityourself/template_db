@@ -36,6 +36,12 @@ namespace tdb
 
 		using M::Stale;
 		using M::Incidental;
+		using M::Close;
+
+		uint8_t* GetObject(uint64_t off) const
+		{
+			return M::offset(off);
+		}
 
 		static uint64_t AvailableSpace(uint64_t used)
 		{

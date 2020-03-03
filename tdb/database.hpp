@@ -36,14 +36,33 @@ namespace tdb
 	template <size_t S, size_t F = 4> using _IndexFuzzyHashSafe = _Database< _SGR<S>, _SGF<S, F> >;
 	template <size_t S, size_t F = 4> using _BigIndexFuzzyHashSafe = _Database< _SGR256<S>, _SGF256<S, F> >;
 
+	template <size_t S> using _RM = _Recycling< _ReadMemoryList<S>, 64 * 1024 >;
+	template <size_t S, size_t F> using _FM = _BTree<_RM<S>, FuzzyHashPointerT<F> >;
+	template <size_t S, size_t F = 4> using _MemoryIndexFuzzyHash = _Database< _RM<S>, _FM<S, F> >;
+
 	template < size_t G = 1024 * 1024, typename INDEX = _IndexSortedList<G> > class Index
 	{
 		INDEX db;
 
 	public:
-		Index(string_view name)
+		template < typename T > Index(T & stream)
 		{
-			db.Open(name);
+			db.Open(stream);
+		}
+
+		template < typename T > Index(T&& stream)
+		{
+			db.Open(stream);
+		}
+
+		void Close()
+		{
+			db.Close();
+		}
+
+		uint8_t* GetObject(uint64_t off) const
+		{
+			return db.GetObject(off);
 		}
 
 		bool Stale(uint64_t size = 0) const
@@ -51,9 +70,19 @@ namespace tdb
 			return db.Stale(size);
 		}
 
+		auto Incidental(size_t s)
+		{
+			return db.Incidental(s);
+		}
+
 		template <typename K, typename V> auto Insert(const K& k, const V& v)
 		{
 			return db.Table<0>().Insert(k, v);
+		}
+
+		template <typename F> auto Iterate(F &&f) const
+		{
+			return db.Table<0>().Iterate(std::move(f));
 		}
 
 		template <typename K> auto Find(const K& k) const
@@ -72,6 +101,8 @@ namespace tdb
 		}
 	};
 
+	using MemoryHashmap = const Index<1024 * 1024, _MemoryIndexFuzzyHash<1024 * 1024>>;
+
 	using SmallIndex = Index<>;
 	using SmallIndexReadOnly = const Index<>;
 
@@ -84,8 +115,14 @@ namespace tdb
 	using LargeIndexS = Index<64 * 1024 * 1024, _IndexSortedListSafe<64 * 1024 * 1024>>;
 	using LargeIndexReadOnlyS = const Index<64 * 1024 * 1024, _IndexSortedListSafe<64 * 1024 * 1024>>;
 
+	using TinyHashmapSafe = Index<960 * 1024, _IndexFuzzyHashSafe<960 * 1024>>;
+	using TinyHashmapReadOnlySafe = const Index<960 * 1024, _IndexFuzzyHashSafe<960 * 1024>>;
+
 	using SmallHashmap = Index<1024 * 1024, _IndexFuzzyHash<1024 * 1024>>;
 	using SmallHashmapReadOnly = const Index<1024 * 1024, _IndexFuzzyHash<1024 * 1024>>;
+
+	using SmallHashmapSafe = Index<1024 * 1024, _IndexFuzzyHashSafe<1024 * 1024>>;
+	using SmallHashmapReadOnlySafe = const Index<1024 * 1024, _IndexFuzzyHashSafe<1024 * 1024>>;
 
 	using MediumHashmap = Index<8 * 1024 * 1024, _IndexFuzzyHash<8 * 1024 * 1024>>;
 	using MediumHashmapReadOnly = const Index<8 * 1024 * 1024, _IndexFuzzyHash<8 * 1024 * 1024>>;

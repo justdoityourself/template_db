@@ -145,7 +145,7 @@ namespace tdb
 
 		uint8_t * data() { return (uint8_t*)map.data() + sizeof(_Header); }
 		uint64_t size() { return Header().size; }
-		uint8_t* offset(uint64_t m) { return (uint8_t*)map.data() + m + sizeof(_Header); }
+		uint8_t* offset(uint64_t m) const { return (uint8_t*)map.data() + m + sizeof(_Header); }
 
 		uint64_t offset_of(uint8_t* v)
 		{
@@ -177,9 +177,177 @@ namespace tdb
 		}
 	};
 
+	template <uint64_t growsize_t = 1024 * 1024, size_t page_t = 64 * 1024> class _ReadMemoryFile
+	{
+		std::vector<uint8_t> mem;
+
+		struct _Header
+		{
+			uint64_t size = 0;
+			uint64_t version = 1;
+
+			uint64_t _align[6] = { 0 };
+		};
+
+		_Header& Header() const
+		{
+			return *((_Header*)mem.data());
+		}
+
+	public:
+		std::pair<uint8_t*, uint64_t> Incidental(size_t s)
+		{
+			return std::make_pair<nullptr, -1>;
+		}
+
+		void Flush() {  }
+		void Close() { }
+
+		bool Stale(uint64_t size = 0) const
+		{
+			return Header().size + size > mem.size();
+		}
+
+		void Reopen(){}
+
+		_ReadMemoryFile() {}
+		_ReadMemoryFile(std::vector<uint8_t>& _m) { Open(_m);  }
+
+		void Open(std::vector<uint8_t>& _m)
+		{
+			mem = std::move(_m);
+		}
+
+		~_ReadMemoryFile() {}
+
+		void Resize(uint64_t target){}
+
+		void Reserve(uint64_t target) { }
+
+		void UpdateVersion()
+		{
+			Header().version++;
+		}
+
+		uint8_t* data() { return (uint8_t*)mem.data() + sizeof(_Header); }
+		uint64_t size() { return Header().size; }
+		uint8_t* offset(uint64_t m) const { return (uint8_t*)mem.data() + m + sizeof(_Header); }
+
+		uint64_t offset_of(uint8_t* v)
+		{
+			return (uint64_t)(v - data());
+		}
+
+		pair<uint8_t*, uint64_t> Allocate(uint64_t szof)
+		{
+			return make_pair((uint8_t*)nullptr, uint64_t(0));
+		}
+
+		template <typename J> pair<J*, uint64_t> Allocate()
+		{
+			auto r = Allocate(sizeof(J));
+			new(r.first) J();
+
+			return make_pair((J*)r.first, r.second);
+		}
+
+		template <typename J, typename ... t_args> pair<J*, uint64_t> Construct(t_args ... args)
+		{
+			auto r = Allocate(sizeof(J));
+			new(r.first) J(args...);
+
+			return make_pair((J*)r.first, r.second);
+		}
+	};
+
+	template <uint64_t growsize_t = 1024 * 1024, size_t grace_t = 64, size_t page_t = 64 * 1024> class _ReadMemoryList
+	{
+		std::vector<uint8_t> mem;
+
+		struct _Header
+		{
+			uint64_t size = 0;
+			uint64_t version = 1;
+
+			uint64_t _align[6] = { 0 };
+
+			uint8_t ex[page_t - grace_t - 64];
+		};
+
+		_Header& Header() const
+		{
+			return *((_Header*)mem.data());
+		}
+
+	public:
+		std::pair<uint8_t*, uint64_t> Incidental(size_t s)
+		{
+			return std::make_pair<nullptr, -1>;
+		}
+
+		void Flush() {  }
+		void Close() { }
+
+		bool Stale(uint64_t size = 0) const
+		{
+			return Header().size + size > mem.size();
+		}
+
+		void Reopen() {}
+
+		_ReadMemoryList() {}
+		_ReadMemoryList(std::vector<uint8_t>& _m) { Open(_m); }
+
+		void Open(std::vector<uint8_t>& _m)
+		{
+			mem = std::move(_m);
+		}
+
+		~_ReadMemoryList() {}
+
+		void Resize(uint64_t target) {}
+
+		void Reserve(uint64_t target) { }
+
+		void UpdateVersion()
+		{
+			Header().version++;
+		}
+
+		uint8_t* data() { return (uint8_t*)mem.data() + sizeof(_Header); }
+		uint64_t size() { return Header().size; }
+		uint8_t* offset(uint64_t m) const { return (uint8_t*)mem.data() + m + sizeof(_Header); }
+
+		uint64_t offset_of(uint8_t* v)
+		{
+			return (uint64_t)(v - data());
+		}
+
+		pair<uint8_t*, uint64_t> Allocate(uint64_t szof)
+		{
+			return make_pair((uint8_t*)nullptr, uint64_t(0));
+		}
+
+		template <typename J> pair<J*, uint64_t> Allocate()
+		{
+			auto r = Allocate(sizeof(J));
+			new(r.first) J();
+
+			return make_pair((J*)r.first, r.second);
+		}
+
+		template <typename J, typename ... t_args> pair<J*, uint64_t> Construct(t_args ... args)
+		{
+			auto r = Allocate(sizeof(J));
+			new(r.first) J(args...);
+
+			return make_pair((J*)r.first, r.second);
+		}
+	};
+
 	template <uint64_t growsize_t = 1024 * 1024, size_t grace_t = 64, size_t page_t = 64*1024> class _MapList
 	{
-		std::mutex ll;
+		std::recursive_mutex ll;
 		std::list<mio::mmap_sink> list;
 		string name;
 		uint64_t current = 0;
@@ -226,7 +394,9 @@ namespace tdb
 		std::pair<uint8_t*,uint64_t> Incidental(size_t s)
 		{
 			if (s > page_t)
-				return std::make_pair<nullptr, -1>;
+				return std::make_pair((uint8_t*)nullptr, (uint64_t)-1);
+
+			std::lock_guard<std::recursive_mutex> lock(ll);
 
 			if (s > incidental.size())
 			{
@@ -266,7 +436,7 @@ namespace tdb
 
 		void Flatten()
 		{
-			std::lock_guard<std::mutex> lock(ll);
+			std::lock_guard<std::recursive_mutex> lock(ll);
 
 			Reopen();
 		}
@@ -326,7 +496,7 @@ namespace tdb
 		//uint8_t* data() { return (uint8_t*)map.data() + sizeof(_Header); }
 		uint64_t size() { return Header().size; }
 
-		uint8_t* offset(uint64_t o) 
+		uint8_t* offset(uint64_t o) const
 		{ 
 			o += sizeof(_Header);
 
@@ -365,7 +535,7 @@ namespace tdb
 
 		pair<uint8_t*, uint64_t> Allocate(uint64_t szof)
 		{
-			std::lock_guard<std::mutex> lock(ll);
+			std::lock_guard<std::recursive_mutex> lock(ll);
 
 			auto s = Header().size;
 

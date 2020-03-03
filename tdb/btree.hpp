@@ -491,16 +491,22 @@ namespace tdb
 
 private: 
 		
-		template < typename F > int _Iterate(node_t* node, F f) const
+		template < typename F > int _Iterate(node_t* node, F && f) const
 		{
 			int count = node->count;
 
 			if (!count)
 				return 0;
 
-			for (int i = 0; i < (int)node->count; i++)
-				if (f(node->pointers[i]))
-					return i;
+			for (int i = 0, c = 0; i < (int)node->count; c++)
+			{
+				if(node->pointers[c] != (pointer_t)-1)
+				{ 
+					i++;
+					if (!f(node->pointers[c]))
+						return i;
+				}
+			}
 
 			for (int i = 0; i < link_c; i++)
 				if (node->links[i])
@@ -511,12 +517,12 @@ private:
 
 public: 
 		
-		template < typename F > int Iterate(F f) const
+		template < typename F > int Iterate(F &&f) const
 		{
 			if (!Root())
 				return 0;
 			else
-				return _Iterate(f);
+				return _Iterate(Root(),std::move(f));
 		}
 
 		pointer_t* Find(const key_t& k) const

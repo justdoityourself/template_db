@@ -26,6 +26,9 @@ namespace tdb
 		_Database() {}
 
 		using R::Stale;
+		using R::Incidental;
+		using R::Close;
+		using R::GetObject;
 
 		void Validate()
 		{
