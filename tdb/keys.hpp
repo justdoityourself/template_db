@@ -6,12 +6,11 @@
 #include <time.h>
 #include <random>
 
-using namespace std;
-
 #include "hash.hpp"
 
 namespace tdb
 {
+	using namespace std;
 
 	template <typename T1, typename T2 = T1> struct KeyT
 	{
