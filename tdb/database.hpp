@@ -45,12 +45,24 @@ namespace tdb
 		INDEX db;
 
 	public:
+		Index() {}
+
 		template < typename T > Index(T & stream)
 		{
 			db.Open(stream);
 		}
 
 		template < typename T > Index(T&& stream)
+		{
+			db.Open(stream);
+		}
+
+		template < typename T >  void Open(T& stream)
+		{
+			db.Open(stream);
+		}
+
+		template < typename T >  void Open(T&& stream)
 		{
 			db.Open(stream);
 		}
@@ -101,7 +113,7 @@ namespace tdb
 		}
 	};
 
-	using MemoryHashmap = const Index<1024 * 1024, _MemoryIndexFuzzyHash<1024 * 1024>>;
+	using MemoryHashmap = Index<1024 * 1024, _MemoryIndexFuzzyHash<1024 * 1024>>;
 
 	using SmallIndex = Index<>;
 	using SmallIndexReadOnly = const Index<>;
