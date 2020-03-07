@@ -17,6 +17,34 @@
 using namespace tdb;
 using namespace d8u::util;
 
+TEST_CASE("Persistent Incidental Simple", "[tdb::]")
+{
+    std::filesystem::remove_all("db.dat");
+
+    auto k = Key32(string_view("Test"));
+    auto k2 = Key32(string_view("Test2"));
+
+    {
+        SmallIndex dx("db.dat");  
+
+        CHECK(true == dx.InsertObject(k, k));
+        CHECK(false == dx.InsertObject(k, k));
+        CHECK(nullptr != dx.FindObject(k));
+    }
+
+    {
+        SmallIndex dx("db.dat");
+
+        CHECK(true == dx.InsertObject(k2, k2));
+        CHECK(false == dx.InsertObject(k2, k2));
+        CHECK(nullptr != dx.FindObject(k2));
+
+        CHECK(dx.FindObject(k) != dx.FindObject(k2));
+    }
+
+    std::filesystem::remove_all("db.dat");
+}
+
 TEST_CASE("Simple Index", "[tdb::]")
 {
     std::filesystem::remove_all("db.dat");

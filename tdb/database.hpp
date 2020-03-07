@@ -111,6 +111,54 @@ namespace tdb
 		{
 			return db.Table<0>().FindLock(k);
 		}
+
+		template <typename K, typename V> bool InsertObject(const K& k, const V& v)
+		{
+			auto [ptr,status] = db.Table<0>().Insert(k, uint64_t(0));
+
+			if (status) return false;
+
+			auto [iptr, offset] = Incidental(v.size());
+
+			std::copy(v.begin(), v.end(), iptr);
+			*ptr = offset;
+
+			return true;
+		}
+
+		template <typename K, typename V> bool InsertObjectLock(const K& k, const V& v)
+		{
+			auto [ptr, status] = db.Table<0>().InsertLock(k, uint64_t(0));
+
+			if (status) return false;
+
+			auto [iptr, offset] = Incidental(v.size());
+
+			std::copy(v.begin(), v.end(), iptr);
+			*ptr = offset;
+
+			return true;
+		}
+
+		template <typename K> uint8_t * FindObject(const K& k)
+		{
+			auto ptr = db.Table<0>().Find(k);
+
+			if (!ptr)
+				return nullptr;
+
+			return GetObject(*ptr);
+		}
+
+		template <typename K> uint8_t* FindObjectLock(const K& k)
+		{
+			auto ptr = db.Table<0>().FindLock(k);
+
+			if (!ptr)
+				return nullptr;
+
+			return GetObject(*ptr);
+		}
 	};
 
 	using MemoryHashmap = Index<1024 * 1024, _MemoryIndexFuzzyHash<1024 * 1024>>;

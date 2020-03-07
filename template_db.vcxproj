@@ -261,6 +261,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -303,6 +304,7 @@
     <ClInclude Include="tdb\host.hpp" />
     <ClInclude Include="tdb\keys.hpp" />
     <ClInclude Include="tdb\mapping.hpp" />
+    <ClInclude Include="tdb\net.hpp" />
     <ClInclude Include="tdb\recycling.hpp" />
     <ClInclude Include="tdb\test.hpp" />
   </ItemGroup>

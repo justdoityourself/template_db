@@ -31,8 +31,19 @@ namespace tdb
 			uint64_t size = 0;
 			uint64_t version = 1;
 
-			uint64_t _align[6] = { 0 };
+			uint64_t incidental_start = 0;
+			uint64_t incidental_end = 0;
+
+			uint64_t IncidentalSize()
+			{
+				return incidental_end - incidental_start;
+			}
+
+			uint64_t _align[4] = { 0,0,0,0 };
 		};
+
+		static_assert(sizeof(uint64_t) == 8);
+		static_assert(sizeof(_Header) == 64);
 
 		_Header & Header() const
 		{
@@ -47,29 +58,27 @@ namespace tdb
 
 			if (error)
 				throw std::runtime_error(string("Failed to map ") + error.message());
-		}
-
-		uint64_t incidental_offset = 0;
-		gsl::span<uint8_t> incidental;
+		}		
 
 	public:
 		std::pair<uint8_t*, uint64_t> Incidental(size_t s)
 		{
 			if (s > page_t)
-				return std::make_pair<nullptr, -1>;
+				return std::make_pair(nullptr, -1);
 
-			if (s > incidental.size())
+			auto& h = Header();
+
+			if (s > h.IncidentalSize())
 			{
 				auto [pointer, offset] = Allocate(page_t);
-				incidental_offset = offset;
-				incidental = gsl::span<uint8_t>(pointer, page_t);
+				h.incidental_start = offset;
+				h.incidental_end = offset + page_t;
 			}
 
-			uint8_t* result = incidental.data();
-			uint64_t result_offset = incidental_offset;
+			uint8_t* result = offset(h.incidental_start);
+			uint64_t result_offset = h.incidental_start;
 
-			incidental_offset += s;
-			incidental = gsl::span<uint8_t>(incidental.data() + s, incidental.size() - s);
+			h.incidental_start += s;
 
 			return std::make_pair(result, result_offset);
 		}
@@ -357,11 +366,20 @@ namespace tdb
 			uint64_t size = 0;
 			uint64_t version = 1;
 
-			uint64_t _align[6] = { 0 };
+			uint64_t incidental_start = 0;
+			uint64_t incidental_end = 0;
+
+			uint64_t IncidentalSize()
+			{
+				return incidental_end - incidental_start;
+			}
+
+			uint64_t _align[4] = { 0,0,0,0 };
 
 			uint8_t ex[page_t - grace_t - 64];
 		};
 
+		static_assert(sizeof(uint64_t) == 8);
 		static_assert(sizeof(_Header) + grace_t == page_t);
 
 		_Header& Header() const
@@ -383,9 +401,6 @@ namespace tdb
 			current += list.back().size();
 		}
 
-		uint64_t incidental_offset = 0;
-		gsl::span<uint8_t> incidental;
-
 	public:
 
 		//Allocate an unaligned fragment of mapped fil space:
@@ -398,20 +413,21 @@ namespace tdb
 
 			std::lock_guard<std::recursive_mutex> lock(ll);
 
-			if (s > incidental.size())
+			auto& h = Header();
+
+			if (s > h.IncidentalSize())
 			{
 				auto [pointer, offset] = Allocate(page_t);
-				incidental_offset = offset;
-				incidental = gsl::span<uint8_t>(pointer,page_t);
+				h.incidental_start = offset;
+				h.incidental_end = offset + page_t;
 			}
 
-			uint8_t* result = incidental.data();
-			uint64_t result_offset = incidental_offset;
+			uint8_t* result = offset(h.incidental_start);
+			uint64_t result_offset = h.incidental_start;
 
-			incidental_offset += s;
-			incidental = gsl::span<uint8_t>(incidental.data()+s, incidental.size()-s);
+			h.incidental_start += s;
 
-			return std::make_pair (result, result_offset);
+			return std::make_pair(result, result_offset);
 		}
 
 		void Flush() 
