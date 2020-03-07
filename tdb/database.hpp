@@ -67,6 +67,11 @@ namespace tdb
 			db.Open(stream);
 		}
 
+		void Flush()
+		{
+			db.Flush();
+		}
+
 		void Close()
 		{
 			db.Close();
@@ -120,6 +125,9 @@ namespace tdb
 
 			auto [iptr, offset] = Incidental(v.size());
 
+			if (!iptr) 
+				return false;
+
 			std::copy(v.begin(), v.end(), iptr);
 			*ptr = offset;
 
@@ -134,7 +142,48 @@ namespace tdb
 
 			auto [iptr, offset] = Incidental(v.size());
 
+			if (!iptr)
+				return false;
+
 			std::copy(v.begin(), v.end(), iptr);
+			*ptr = offset;
+
+			return true;
+		}
+
+		template <typename K, typename V, typename SZ = uint16_t> bool InsertSizedObject(const K& k, const V& v)
+		{
+			auto [ptr, status] = db.Table<0>().Insert(k, uint64_t(0));
+
+			if (status) return false;
+
+			auto [iptr, offset] = Incidental(v.size() + 2);
+
+			if (!iptr)
+				return false;
+
+			auto sz = (SZ*)iptr;
+			*sz = (SZ)v.size();
+			std::copy(v.begin(), v.end(), iptr+sizeof(SZ));
+			*ptr = offset;
+
+			return true;
+		}
+
+		template <typename K, typename V, typename SZ = uint16_t> bool InsertSizedObjectLock(const K& k, const V& v)
+		{
+			auto [ptr, status] = db.Table<0>().InsertLock(k, uint64_t(0));
+
+			if (status) return false;
+
+			auto [iptr, offset] = Incidental(v.size() + 2);
+
+			if (!iptr)
+				return false;
+
+			auto sz = (SZ*)iptr;
+			*sz = (SZ)v.size();
+			std::copy(v.begin(), v.end(), iptr + sizeof(SZ));
 			*ptr = offset;
 
 			return true;
@@ -158,6 +207,40 @@ namespace tdb
 				return nullptr;
 
 			return GetObject(*ptr);
+		}
+
+		template <typename K, typename SZ = uint16_t> gsl::span<uint8_t> FindSizedObject(const K& k)
+		{
+			auto ptr = db.Table<0>().Find(k);
+
+			if (!ptr)
+				return nullptr;
+
+			auto obj = GetObject(*ptr);
+
+			if (!obj)
+				return gsl::span<uint8_t>();
+
+			auto sz = (SZ*)obj;
+
+			return gsl::span<uint8_t>(obj + sizeof(SZ), (size_t)*sz);
+		}
+
+		template <typename K, typename SZ = uint16_t> gsl::span<uint8_t> FindSizedObjectLock(const K& k)
+		{
+			auto ptr = db.Table<0>().FindLock(k);
+
+			if (!ptr)
+				return gsl::span<uint8_t>();
+
+			auto obj = GetObject(*ptr);
+
+			if (!obj)
+				return gsl::span<uint8_t>();
+
+			auto sz = (SZ*)obj;
+
+			return gsl::span<uint8_t>(obj + sizeof(SZ), (size_t)*sz);
 		}
 	};
 

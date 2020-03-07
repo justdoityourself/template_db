@@ -83,7 +83,11 @@ namespace tdb
 			return std::make_pair(result, result_offset);
 		}
 
-		void Flush() { map.sync(); }
+		void Flush() 
+		{ 
+			std::error_code c;
+			map.sync(c); 
+		}
 		string_view Name() { return name; }
 		void Close() { map.unmap(); }
 
@@ -432,8 +436,9 @@ namespace tdb
 
 		void Flush() 
 		{ 
+			std::error_code c;
 			for(auto & map : list)
-				map.sync(); 
+				map.sync(c); 
 		}
 
 		string_view Name() { return name; }

@@ -17,6 +17,12 @@
 using namespace tdb;
 using namespace d8u::util;
 
+
+TEST_CASE("Network Layer", "[tdb::]")
+{
+    //NETWORK LAYER TODO
+}
+
 TEST_CASE("Persistent Incidental Simple", "[tdb::]")
 {
     std::filesystem::remove_all("db.dat");

@@ -25,6 +25,7 @@ namespace tdb
 	public:
 		_Database() {}
 
+		using R::Flush;
 		using R::Stale;
 		using R::Incidental;
 		using R::Close;

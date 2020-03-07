@@ -34,6 +34,7 @@ namespace tdb
 
 	public:
 
+		using M::Flush;
 		using M::Stale;
 		using M::Incidental;
 		using M::Close;
