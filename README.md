@@ -1,5 +1,5 @@
 # template_db
-A database written Modern C++ from the ground up.
+A database written in Modern C++ from the ground up.
 
 ## Getting Started
 
