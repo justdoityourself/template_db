@@ -29,4 +29,5 @@ for (size_t i = 0; i < lim; i++)
 
 ## Todo
 * Tables
+* No Table Transacted JSON buckets.
 
