@@ -68,7 +68,7 @@ namespace tdb
 			HashT(*this, *this);
 		}
 
-		int Compare(const KeyT & p)
+		int Compare(const KeyT & p,void* ref_page=nullptr)
 		{
 			if (first == p.first)
 			{

@@ -14,31 +14,54 @@
 
 namespace tdb
 {
+	/*
+		With great configuration comes huge blocks of template routing:
+	*/
+
 	template <size_t S> using _R = _Recycling< _MapFile<S>, 64 * 1024 >;
 	template <size_t S> using _SGR = _Recycling< _MapList<S>, 64 * 1024 >;
+
 	template <size_t S> using _T = _BTree<_R<S>, OrderedListPointer >;
 	template <size_t S> using _SGT = _BTree<_SGR<S>, OrderedListPointer >;
+
 	template <size_t S, size_t F> using _F = _BTree<_R<S>, FuzzyHashPointerT<F> >;
 	template <size_t S, size_t F> using _SGF = _BTree<_SGR<S>, FuzzyHashPointerT<F> >;
 
+	template <size_t S> using _SS = _BTree<_R<S>, OrderedSurrogateStringPointer<_R<S>> >;
+	template <size_t S> using _SGSS = _BTree<_SGR<S>, OrderedSurrogateStringPointer<_SGR<S>> >;
+
+
+
 	template <size_t S> using _R256 = _Recycling< _MapFile<S>, 256 * 1024 >;
 	template <size_t S> using _SGR256 = _Recycling< _MapList<S>, 256 * 1024 >;
+
 	template <size_t S> using _T256 = _BTree<_R256<S>, OrderedListPointer >;
 	template <size_t S> using _SGT256 = _BTree<_SGR256<S>, OrderedListPointer >;
+
 	template <size_t S, size_t F> using _F256 = _BTree<_R256<S>, BigFuzzyHashPointerT<F> >;
 	template <size_t S, size_t F> using _SGF256 = _BTree<_SGR256<S>, BigFuzzyHashPointerT<F> >;
 
+
+
 	template <size_t S> using _IndexSortedList = _Database< _R<S>, _T<S> >;
+	template <size_t S> using _IndexSortedSurrogateString = _Database< _R<S>, _SS<S> >;
 	template <size_t S, size_t F = 4> using _IndexFuzzyHash = _Database< _R<S>, _F<S,F> >;
 	template <size_t S, size_t F = 4> using _BigIndexFuzzyHash = _Database< _R256<S>, _F256<S, F> >;
 
+
+
 	template <size_t S> using _IndexSortedListSafe = _Database< _SGR<S>, _SGT<S> >;
+	template <size_t S> using _IndexSortedSurrogateStringSafe = _Database< _SGR<S>, _SGSS<S> >;
 	template <size_t S, size_t F = 4> using _IndexFuzzyHashSafe = _Database< _SGR<S>, _SGF<S, F> >;
 	template <size_t S, size_t F = 4> using _BigIndexFuzzyHashSafe = _Database< _SGR256<S>, _SGF256<S, F> >;
+
+
 
 	template <size_t S> using _RM = _Recycling< _ReadMemoryList<S>, 64 * 1024 >;
 	template <size_t S, size_t F> using _FM = _BTree<_RM<S>, FuzzyHashPointerT<F> >;
 	template <size_t S, size_t F = 4> using _MemoryIndexFuzzyHash = _Database< _RM<S>, _FM<S, F> >;
+
+
 
 	template < size_t G = 1024 * 1024, typename INDEX = _IndexSortedList<G> > class Index
 	{
@@ -90,6 +113,15 @@ namespace tdb
 		auto Incidental(size_t s)
 		{
 			return db.Incidental(s);
+		}
+
+		template< typename T> auto SetObject(const T & t)
+		{
+			auto segment = Incidental(t.size());
+
+			std::copy(t.begin(), t.end(), segment.first);
+
+			return segment;
 		}
 
 		template <typename K, typename V> auto Insert(const K& k, const V& v)
@@ -244,7 +276,14 @@ namespace tdb
 		}
 	};
 
+
+	/*
+		More template routing!
+	*/
+
 	using MemoryHashmap = Index<1024 * 1024, _MemoryIndexFuzzyHash<1024 * 1024>>;
+
+	using SmallStringIndex = Index<1024*1024, _IndexSortedSurrogateStringSafe<1024*1024>>;
 
 	using SmallIndex = Index<>;
 	using SmallIndexReadOnly = const Index<>;
@@ -321,140 +360,4 @@ namespace tdb
 		}
 	};
 
-
-	/*
-		These constructs are mostly not useful with the implementation of per-node locking and mapping lists.
-		Might be removed at some point.
-	*/
-
-	template <typename T> class SafeWriter
-	{
-		std::mutex ml;
-		T writer;
-
-		struct Lifetime
-		{
-			SafeWriter<T> & parent;
-
-			Lifetime(SafeWriter<T>& _parent) : parent(_parent)
-			{
-				parent.ml.lock();
-			}
-
-			~Lifetime()
-			{
-				parent.ml.unlock();
-			}
-
-			T& GetWriter () { return parent.writer; }
-		};
-
-	public:
-		SafeWriter(std::string_view name) : writer(name) {}
-
-		Lifetime GetLock() { return Lifetime(*this); }
-	};
-
-	template <typename T, size_t MIN=3> class ViewManager
-	{
-		std::mutex ml;
-		std::list<std::pair<std::atomic<size_t>,T>> maps;
-		std::string name;
-
-		struct Lifetime
-		{
-			std::pair<std::atomic<size_t>, T>& parent;
-
-			Lifetime(std::pair<std::atomic<size_t>, T>& _parent) : parent(_parent) 
-			{
-				parent.first++;
-			}
-
-			~Lifetime() { parent.first--; }
-
-			T& Map () { return parent.second; }
-		};
-
-	public:
-		ViewManager(std::string_view _name) : name(_name)
-		{
-			maps.emplace_back(0, name);
-		}
-
-		Lifetime View(uint64_t size=0)
-		{
-			std::lock_guard<std::mutex> l(ml);
-
-			if (maps.back().second.Stale(size))
-			{
-				maps.emplace_back(0, name);
-
-				//House Keeping:
-				//
-
-				while (maps.size() > MIN && maps.front().first.load() == 0)
-					maps.pop_front();
-			}
-
-			//Lockless safety conditions:
-			//
-
-			//MIN views, growth / stale rate, test stale before atomic inc.
-			//If all three of these conditions can happen in a few micro seconds then this breaks. Can't happen.
-			//
-
-			return Lifetime(maps.back());
-		}
-
-		//Target offset instead of total size:
-		//
-
-		Lifetime Fixed(uint64_t offset)
-		{
-			std::lock_guard<std::mutex> l(ml);
-
-			if (maps.back().second.size() < offset) 
-			{
-				maps.emplace_back(0, name);
-
-				while (maps.size() > MIN&& maps.front().first.load() == 0)
-					maps.pop_front();
-			}
-
-			return Lifetime(maps.back());
-		}
-
-		auto Alloc(uint64_t size = 0)
-		{
-			std::lock_guard<std::mutex> l(ml);
-
-			if (maps.back().second.Stale(size))
-			{
-				maps.emplace_back(0, name);
-
-				while (maps.size() > MIN&& maps.front().first.load() == 0)
-					maps.pop_front();
-			}
-
-			//Lockless safety conditions:
-			//
-
-			//MIN views, growth / stale rate, test stale before atomic inc.
-			//If all three of these conditions can happen in a few micro seconds then this breaks. Can't happen.
-			//
-
-			return std::make_pair(maps.back().second.Allocate(size),Lifetime(maps.back()));
-		}
-	};
-
-
-	template <typename T> class MakeHeader
-	{
-	public:
-		MakeHeader(std::string_view name)
-		{
-			if (!std::filesystem::exists(name))
-				ofstream(name, ios::out | ios::binary).write((const char*)&T(), sizeof(T));
-		}
-	};
 }

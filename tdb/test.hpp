@@ -18,9 +18,31 @@ using namespace tdb;
 using namespace d8u::util;
 
 
+
 TEST_CASE("Network Layer", "[tdb::]")
 {
     //NETWORK LAYER TODO
+}
+
+TEST_CASE("Surrogate String Simple", "[tdb::]")
+{
+    std::filesystem::remove_all("db.dat");
+
+    {
+        SmallStringIndex dx("db.dat");
+
+        dx.Insert(dx.SetObject(string_viewz("Surrogate String")).second,uint64_t(0));
+        dx.Insert(dx.SetObject(string_viewz("Surrogate WString")).second, uint64_t(1));
+        dx.Insert(dx.SetObject(string_viewz("abcdefg")).second, uint64_t(2));
+        dx.Insert(dx.SetObject(string_viewz("zyxwvu")).second, uint64_t(3));
+
+        CHECK((0 == *dx.Find(string_viewz("Surrogate String"))));
+        CHECK((1 == *dx.Find(string_viewz("Surrogate WString"))));
+        CHECK((2 == *dx.Find(string_viewz("abcdefg"))));
+        CHECK((3 == *dx.Find(string_viewz("zyxwvu"))));
+    }
+
+    std::filesystem::remove_all("db.dat");
 }
 
 TEST_CASE("Persistent Incidental Simple", "[tdb::]")

@@ -176,7 +176,7 @@ namespace tdb
 
 		size_t max_rec() { return (size_t)-1; }
 
-		int Insert(const key_t& k, const pointer_t& p, pair<pointer_t*, bool>& overwrite, size_t depth)
+		int Insert(const key_t& k, const pointer_t& p, pair<pointer_t*, bool>& overwrite, size_t depth,void*ref_pages)
 		{
 			overwrite = { nullptr,false };
 			if (!count)
@@ -197,7 +197,7 @@ namespace tdb
 			{
 				int middle = (low + high) >> 1;
 
-				switch (keys[middle].Compare(k))
+				switch (keys[middle].Compare(k,ref_pages))
 				{
 				case -1:
 					low = middle + 1;
@@ -220,7 +220,6 @@ namespace tdb
 					low++;
 
 				return (low * link_c / bin_c) + 1;
-				//return (low > bin_c / 2) ? 2 : 1;
 			}
 			else
 			{
@@ -235,7 +234,7 @@ namespace tdb
 			}
 		}
 
-		int Find(const key_t& k, pointer_t** pr, size_t depth)
+		int Find(const key_t& k, pointer_t** pr, size_t depth, void* ref_pages)
 		{
 			*pr = nullptr;
 
@@ -249,7 +248,7 @@ namespace tdb
 			{
 				int middle = (low + high) >> 1;
 
-				switch (keys[middle].Compare(k))
+				switch (keys[middle].Compare(k, ref_pages))
 				{
 				case -1:
 					low = middle + 1;
@@ -271,7 +270,6 @@ namespace tdb
 					low++;
 
 				return (low * link_c / bin_c) + 1;
-				//return (low > bin_c / 2) ? 2 : 1;
 			}
 			else
 				return 0;
@@ -300,16 +298,14 @@ namespace tdb
 		{
 			for (size_t i = 0; i < bin_c; i++)
 				pointers[i] = (pointer_t)-1;
-				//keys[i].Zero();
 		}
 
 		size_t max_rec() { return sizeof(key_t)/2; }
 
-		int Insert(const key_t& k, const pointer_t& p, pair<pointer_t*, bool>& overwrite, size_t depth)
+		int Insert(const key_t& k, const pointer_t& p, pair<pointer_t*, bool>& overwrite, size_t depth, void* ref_pages)
 		{
 			int bin = (*(((uint16_t*)&k) + depth) % bin_c);
 
-			//if (keys[bin].IsZero())
 			if (pointers[bin] == (pointer_t)-1)
 			{
 				keys[bin] = k;
@@ -332,13 +328,6 @@ namespace tdb
 
 			while (low < high)
 			{
-				/*if (count != bin_c && -1 == z)
-				{
-					//if (keys[low].IsZero())
-					if (pointers[low] == (pointer_t)-1)
-						z = low;
-				}*/
-
 				if (pointers[low] == (pointer_t)-1)
 				{
 					z = low++;
@@ -367,10 +356,9 @@ namespace tdb
 			}
 			else
 				return ((low-1) * link_c / bin_c) + 1;
-				//return (low > bin_c / 2) ? 2 : 1;
 		}
 
-		int Find(const key_t& k, pointer_t** pr, size_t depth)
+		int Find(const key_t& k, pointer_t** pr, size_t depth, void* ref_pages)
 		{
 			*pr = nullptr;
 
@@ -394,13 +382,6 @@ namespace tdb
 
 			while (low < high)
 			{
-				/*if (count != bin_c && -1 == z)
-				{
-					//if (keys[low].IsZero())
-					if (pointers[low] == (pointer_t)-1)
-						z = low;
-				}*/
-
 				if (pointers[low] == (pointer_t)-1)
 				{
 					z = low++;
@@ -420,12 +401,52 @@ namespace tdb
 				return 0;
 			else
 				return ((low - 1) * link_c / bin_c) + 1;
-				//return (low > bin_c / 2) ? 2 : 1;
 		}
 	};
 
+	template <typename R, typename int_t> struct _OrderedSurrogateString
+	{
+		static_assert(sizeof(int_t) >= sizeof(size_t));
+
+		_OrderedSurrogateString() {}
+		_OrderedSurrogateString(int_t t): sz_offset(t){}
+
+
+		_OrderedSurrogateString(std::string_view v) 
+		{
+			//This is kindof tricky, handling finds requires an external pointer.
+			//If int_t is >= sizeof(size_t) we can just use it as a pointer and that is how this is implemented.
+
+			sz_offset = (int_t)v.data();
+			sz_offset |= 0x8000000000000000; // ASSUMES 64 bit, todo fix this
+		}
+
+		int_t sz_offset = 0;
+
+		int Compare(const _OrderedSurrogateString& rs, void* _ref_page)
+		{
+			auto ref_page = (R*)_ref_page;
+
+			auto is_pointer = [](auto s) { return 0 != (s & 0x8000000000000000); };
+			auto as_pointer = [](auto s) { return (uint8_t*)(s & 0x7fffffffffffffff); };
+
+			auto l = (const char*) ((is_pointer(sz_offset)) ? as_pointer(sz_offset) : ref_page->GetObject(sz_offset));
+			auto r = (const char*) ((is_pointer(rs.sz_offset)) ? as_pointer(rs.sz_offset) : ref_page->GetObject(rs.sz_offset));
+
+			return strcmp(l, r);
+		}
+	};
+
+	template < size_t L > std::string_view string_viewz(const char (&t) [L])
+	{
+		return std::string_view(t, L);
+	}
+
 #pragma warning( pop )
 #pragma pack(pop)
+
+	template <typename R> using OrderedSurrogateStringPointer = _OrderedListNode<uint64_t, _OrderedSurrogateString<R,uint64_t>, uint64_t, uint64_t, 4092, 4, 8>;
+	static_assert(sizeof(OrderedSurrogateStringPointer<void>) == 64 * 1024);
 
 	//8 + 40 * N(1637) + 16 + 32 + 0
 	using OrderedListPointer = _OrderedListNode<uint64_t, Key32, uint64_t, uint64_t, 1637, 4, 0>;
@@ -475,9 +496,9 @@ namespace tdb
 			Open(_io);
 		}
 
-		void Validate() {}
+		void Validate() {} //todo checksum node after full, or increment symmetric checksum each insert
 
-		void Open(R* _io, link_t _n)
+		void Open(R* _io, size_t & _n)
 		{
 			root_n = _n;
 			io = _io;
@@ -538,7 +559,7 @@ public:
 			while (current)
 			{
 				pointer_t* pr;
-				int result = current->Find(k, &pr, depth++);
+				int result = current->Find(k, &pr, depth++, (void*)io);
 
 				if (!result)
 					return pr;
@@ -558,6 +579,8 @@ public:
 			return nullptr;
 		}
 
+
+
 		pair<pointer_t*, bool> Insert(const key_t& k, const pointer_t& p)
 		{
 			node_t* current = Root();
@@ -575,7 +598,7 @@ public:
 					return { nullptr,false };
 
 				pair<pointer_t*, bool> overwrite;
-				int result = current->Insert(k, p, overwrite,depth++);
+				int result = current->Insert(k, p, overwrite,depth++,(void*)io);
 
 				if (!result)
 					return overwrite;
@@ -619,7 +642,7 @@ public:
 				ScopedLock lock(*current); //Only works if no remap is allowed
 
 				pointer_t* pr;
-				int result = current->Find(k, &pr,depth++);
+				int result = current->Find(k, &pr,depth++, (void*)io);
 
 				if (!result)
 					return pr;
@@ -663,7 +686,7 @@ public:
 				}
 
 				pair<pointer_t*, bool> overwrite;
-				int result = current->Insert(k, p, overwrite,depth++);
+				int result = current->Insert(k, p, overwrite,depth++, (void*)io);
 
 				if (!result)
 				{
@@ -707,43 +730,5 @@ public:
 
 			return { nullptr,false };
 		}
-
-		/*int Delete(const key_t& k)
-		{
-			return -1;
-			BTreeNode * current = NULL;
-
-			if (*_this->root == 0)
-				return -1;
-			else
-				current = (BTreeNode*)Recycler_Lookup(_this->rcyc, (*_this->root) - 1);
-
-			BTreeNode * next = NULL;
-
-			while (current)
-			{
-				uint32_t overwrite;
-				int result = Node_Insert(current, (BTreeKey*)k, (uint32_t)-1, &overwrite);
-
-				if (overwrite != (uint32_t)-1)
-					Recycler_Delete(_this->rcyc, overwrite);
-
-				if (!result)
-					return 0;
-				else
-				{
-					result--;
-
-					next = (BTreeNode*)Recycler_Lookup(_this->rcyc, current->links[result]);
-
-					if (!next)
-						return -1;
-					else
-						current = next;
-				}
-			}
-
-			return -1;
-		}*/
 	};
 }

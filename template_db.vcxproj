@@ -310,6 +310,7 @@
     <ClInclude Include="tdb\mapping.hpp" />
     <ClInclude Include="tdb\net.hpp" />
     <ClInclude Include="tdb\recycling.hpp" />
+    <ClInclude Include="tdb\table.hpp" />
     <ClInclude Include="tdb\test.hpp" />
   </ItemGroup>
   <ItemGroup>

@@ -13,7 +13,7 @@ namespace tdb
 	{
 		std::tuple<tables_t...> tables;
 
-		template < typename T > void InstallTable(T& t, int n)
+		template < typename T > void InstallTable(T& t, size_t &n)
 		{
 			t.Open(this, n);
 		}
@@ -45,8 +45,8 @@ namespace tdb
 		{
 			R::Open(args...);
 
-			int n = 0;
-			std::apply([&](auto& ...x) {(InstallTable(x, n++), ...); }, tables);
+			size_t n = 0;
+			std::apply([&](auto& ...x) {(InstallTable(x, n), ...); n++; }, tables);
 
 			return tables;
 		}
