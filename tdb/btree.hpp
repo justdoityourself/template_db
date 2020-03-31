@@ -411,15 +411,17 @@ namespace tdb
 		_OrderedSurrogateString() {}
 		_OrderedSurrogateString(int_t t): sz_offset(t){}
 
-
-		_OrderedSurrogateString(std::string_view v) 
+		_OrderedSurrogateString(const char * psz)
 		{
 			//This is kindof tricky, handling finds requires an external pointer.
 			//If int_t is >= sizeof(size_t) we can just use it as a pointer and that is how this is implemented.
 
-			sz_offset = (int_t)v.data();
+			sz_offset = (int_t)psz;
 			sz_offset |= 0x8000000000000000; // ASSUMES 64 bit, todo fix this
 		}
+
+		_OrderedSurrogateString(std::string_view v)
+			: _OrderedSurrogateString((const char*)v.data()) {}
 
 		int_t sz_offset = 0;
 
@@ -500,7 +502,7 @@ namespace tdb
 
 		void Open(R* _io, size_t & _n)
 		{
-			root_n = _n;
+			root_n = _n++;
 			io = _io;
 
 			if (io->size() <= root_n)

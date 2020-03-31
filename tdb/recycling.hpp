@@ -34,6 +34,8 @@ namespace tdb
 
 	public:
 
+		static const auto UnitSize = unit_t;
+
 		using M::Flush;
 		using M::Stale;
 		using M::Incidental;

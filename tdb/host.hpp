@@ -46,7 +46,7 @@ namespace tdb
 			R::Open(args...);
 
 			size_t n = 0;
-			std::apply([&](auto& ...x) {(InstallTable(x, n), ...); n++; }, tables);
+			std::apply([&](auto& ...x) {(InstallTable(x, n), ...); }, tables);
 
 			return tables;
 		}

@@ -9,6 +9,7 @@
 
 #include "host.hpp"
 #include "btree.hpp"
+#include "table.hpp"
 #include "recycling.hpp"
 #include "mapping.hpp"
 
@@ -61,6 +62,52 @@ namespace tdb
 	template <size_t S, size_t F> using _FM = _BTree<_RM<S>, FuzzyHashPointerT<F> >;
 	template <size_t S, size_t F = 4> using _MemoryIndexFuzzyHash = _Database< _RM<S>, _FM<S, F> >;
 
+
+
+
+
+	template <typename element_t, size_t S> using _StringIndexTable = _Database< _SGR<S>,
+																				_Table< _SGR<S>, element_t, _SGSS<S> >
+																			   >;
+
+	template < typename element_t, size_t G = 1024 * 1024, typename TABLE = _StringIndexTable<element_t,G> > class Table
+	{
+		TABLE db;
+
+	public:
+
+		Table() {}
+
+		template < typename T > Table(T& stream)
+		{
+			db.Open(stream);
+		}
+
+		template < typename T > Table(T&& stream)
+		{
+			db.Open(stream);
+		}
+
+		template < typename T >  void Open(T& stream)
+		{
+			db.Open(stream);
+		}
+
+		template < typename T >  void Open(T&& stream)
+		{
+			db.Open(stream);
+		}
+
+		template <typename ... t_args> element_t& Emplace(t_args ... args)
+		{
+			return db.Table<0>().Emplace(args...);
+		}
+
+		template <size_t I, typename K> auto Find(const K& k) const
+		{
+			return db.Table<0>().Find<I>(k);
+		}
+	};
 
 
 	template < size_t G = 1024 * 1024, typename INDEX = _IndexSortedList<G> > class Index

@@ -24,6 +24,56 @@ TEST_CASE("Network Layer", "[tdb::]")
     //NETWORK LAYER TODO
 }
 
+
+
+struct TestTableElement
+{
+    static const size_t max_pages = 8190;
+    static const size_t page_elements = 2048;
+    static const size_t lookup_padding = 0;
+    static const size_t page_padding = 0;
+
+    using Int = uint64_t;
+    using Link = uint64_t;
+
+    TestTableElement() {}
+
+    TestTableElement(uint64_t si, const char* txt) :some_integer(si) 
+    {
+        strncpy_s(indexed_string, txt, 23);
+        indexed_string[23] = '\0';
+    }
+
+    auto Keys() 
+    { 
+        return std::make_tuple(indexed_string);
+    }
+
+    uint64_t some_integer;
+    char indexed_string[24];
+};
+
+TEST_CASE("String Indexed Table", "[tdb::]")
+{
+    std::filesystem::remove_all("db.dat");
+
+    {
+        Table<TestTableElement> dx("db.dat");
+
+        dx.Emplace(0, "help");
+        dx.Emplace(1, "something");
+        dx.Emplace(2, "else");
+        dx.Emplace(3, "qqzzz");
+
+        CHECK((0 == dx.Find<0>(string_viewz("help"))->some_integer));
+        CHECK((1 == dx.Find<0>(string_viewz("something"))->some_integer));
+        CHECK((2 == dx.Find<0>(string_viewz("else"))->some_integer));
+        CHECK((3 == dx.Find<0>(string_viewz("qqzzz"))->some_integer));
+    }
+
+    std::filesystem::remove_all("db.dat");
+}
+
 TEST_CASE("Surrogate String Simple", "[tdb::]")
 {
     std::filesystem::remove_all("db.dat");
