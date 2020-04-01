@@ -27,7 +27,7 @@ namespace tdb
 			std::get<I>(dx).Insert(std::get<I>(ks), v);
 
 			if constexpr (I + 1 != sizeof...(Tidx))
-				InsertIndex<I + 1>(ks,dx);
+				InsertIndex<I + 1>(ks,dx,v);
 		}
 
 		template<size_t I = 0, typename... Tkey, typename... Tidx> void InsertIndexLock(const std::tuple<Tkey...>& ks, std::tuple<Tidx...>& dx, link_t v)

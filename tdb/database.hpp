@@ -70,6 +70,10 @@ namespace tdb
 																				_Table< _SGR<S>, element_t, _SGSS<S> >
 																			   >;
 
+	template <typename element_t, size_t S> using _StringIndexKeyIndexTable = _Database< _SGR<S>,
+																				_Table< _SGR<S>, element_t, _SGSS<S>, _SGF<S,2> >
+																			   >;
+
 	template < typename element_t, size_t G = 1024 * 1024, typename TABLE = _StringIndexTable<element_t,G> > class Table
 	{
 		TABLE db;

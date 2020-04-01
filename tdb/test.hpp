@@ -24,9 +24,67 @@ TEST_CASE("Network Layer", "[tdb::]")
     //NETWORK LAYER TODO
 }
 
+struct StringIndexKeyIndexedTableElement
+{
+    static const size_t max_pages = 8190;
+    static const size_t page_elements = 1024;
+    static const size_t lookup_padding = 0;
+    static const size_t page_padding = 0;
+
+    using Int = uint64_t;
+    using Link = uint64_t;
+
+    StringIndexKeyIndexedTableElement() {}
+
+    StringIndexKeyIndexedTableElement(uint64_t si, const char* txt, const Key32 & _key) 
+        : key(_key)
+        , some_integer(si)
+    {
+        strncpy_s(indexed_string, txt, 23);
+        indexed_string[23] = '\0';
+    }
+
+    auto Keys()
+    {
+        return std::make_tuple(indexed_string,key);
+    }
+
+    uint64_t some_integer;
+    char indexed_string[24];
+    Key32 key;
+};
+
+TEST_CASE("String and Key Indexed Table", "[tdb::]")
+{
+    std::filesystem::remove_all("db.dat");
+
+    {
+        Table<StringIndexKeyIndexedTableElement,1024*1024, _StringIndexKeyIndexTable<StringIndexKeyIndexedTableElement, 1024 * 1024> > dx("db.dat");
+
+        std::array<RandomKeyT<Key32>, 4> keys;
+
+        dx.Emplace(0, "help",keys[0]);
+        dx.Emplace(1, "something", keys[1]);
+        dx.Emplace(2, "else", keys[2]);
+        dx.Emplace(3, "qqzzz", keys[3]);
+
+        CHECK((0 == dx.Find<0>(string_viewz("help"))->some_integer));
+        CHECK((1 == dx.Find<0>(string_viewz("something"))->some_integer));
+        CHECK((2 == dx.Find<0>(string_viewz("else"))->some_integer));
+        CHECK((3 == dx.Find<0>(string_viewz("qqzzz"))->some_integer));
+
+        CHECK((0 == dx.Find<1>(keys[0])->some_integer));
+        CHECK((1 == dx.Find<1>(keys[1])->some_integer));
+        CHECK((2 == dx.Find<1>(keys[2])->some_integer));
+        CHECK((3 == dx.Find<1>(keys[3])->some_integer));
+    }
+
+    std::filesystem::remove_all("db.dat");
+}
 
 
-struct TestTableElement
+
+struct StringIndexedTableElement
 {
     static const size_t max_pages = 8190;
     static const size_t page_elements = 2048;
@@ -36,9 +94,9 @@ struct TestTableElement
     using Int = uint64_t;
     using Link = uint64_t;
 
-    TestTableElement() {}
+    StringIndexedTableElement() {}
 
-    TestTableElement(uint64_t si, const char* txt) :some_integer(si) 
+    StringIndexedTableElement(uint64_t si, const char* txt) :some_integer(si)
     {
         strncpy_s(indexed_string, txt, 23);
         indexed_string[23] = '\0';
@@ -58,7 +116,7 @@ TEST_CASE("String Indexed Table", "[tdb::]")
     std::filesystem::remove_all("db.dat");
 
     {
-        Table<TestTableElement> dx("db.dat");
+        Table<StringIndexedTableElement> dx("db.dat");
 
         dx.Emplace(0, "help");
         dx.Emplace(1, "something");
