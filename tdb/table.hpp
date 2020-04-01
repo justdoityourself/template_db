@@ -171,14 +171,14 @@ namespace tdb
 
 			new(p) element_t(args...);
 
-			InsertIndex<>(p->Keys(),indexes, r->used++);
+			InsertIndex<>(p->Keys(io->GetReference((uint8_t*)p)),indexes, r->used++);
 
 			return *p;
 		}
 
-		template < size_t I, typename K > element_t * Find(const K & k)
+		template < size_t I, typename K > element_t * Find(const K & k, void* ref = nullptr)
 		{
-			auto dx = std::get<I>(indexes).Find(k);
+			auto dx = std::get<I>(indexes).Find(k,ref);
 
 			if (!dx)
 				return nullptr;

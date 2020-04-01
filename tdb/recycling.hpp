@@ -46,6 +46,11 @@ namespace tdb
 			return M::offset(off);
 		}
 
+		uint64_t GetReference(uint8_t*ptr)
+		{
+			return M::offset_of(ptr);
+		}
+
 		static uint64_t AvailableSpace(uint64_t used)
 		{
 			return sizeof(Unit) - used % sizeof(Unit);

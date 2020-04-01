@@ -31,6 +31,9 @@ namespace tdb
 	template <size_t S> using _SS = _BTree<_R<S>, OrderedSurrogateStringPointer<_R<S>> >;
 	template <size_t S> using _SGSS = _BTree<_SGR<S>, OrderedSurrogateStringPointer<_SGR<S>> >;
 
+	template <size_t S> using _SK = _BTree<_R<S>, SurrogateKeyPointer<_R<S>> >;
+	template <size_t S> using _SGSK = _BTree<_SGR<S>, SurrogateKeyPointer<_SGR<S>> >;
+
 
 
 	template <size_t S> using _R256 = _Recycling< _MapFile<S>, 256 * 1024 >;
@@ -46,6 +49,7 @@ namespace tdb
 
 	template <size_t S> using _IndexSortedList = _Database< _R<S>, _T<S> >;
 	template <size_t S> using _IndexSortedSurrogateString = _Database< _R<S>, _SS<S> >;
+	template <size_t S> using _IndexSortedSurrogateKey = _Database< _R<S>, _SK<S> >;
 	template <size_t S, size_t F = 4> using _IndexFuzzyHash = _Database< _R<S>, _F<S,F> >;
 	template <size_t S, size_t F = 4> using _BigIndexFuzzyHash = _Database< _R256<S>, _F256<S, F> >;
 
@@ -53,6 +57,7 @@ namespace tdb
 
 	template <size_t S> using _IndexSortedListSafe = _Database< _SGR<S>, _SGT<S> >;
 	template <size_t S> using _IndexSortedSurrogateStringSafe = _Database< _SGR<S>, _SGSS<S> >;
+	template <size_t S> using _IndexSortedSurrogateKeySafe = _Database< _SGR<S>, _SGSK<S> >;
 	template <size_t S, size_t F = 4> using _IndexFuzzyHashSafe = _Database< _SGR<S>, _SGF<S, F> >;
 	template <size_t S, size_t F = 4> using _BigIndexFuzzyHashSafe = _Database< _SGR256<S>, _SGF256<S, F> >;
 
@@ -71,7 +76,7 @@ namespace tdb
 																			   >;
 
 	template <typename element_t, size_t S> using _StringIndexKeyIndexTable = _Database< _SGR<S>,
-																				_Table< _SGR<S>, element_t, _SGSS<S>, _SGF<S,2> >
+																				_Table< _SGR<S>, element_t, _SGSS<S>, _SGSK<S> >
 																			   >;
 
 	template < typename element_t, size_t G = 1024 * 1024, typename TABLE = _StringIndexTable<element_t,G> > class Table
@@ -107,9 +112,9 @@ namespace tdb
 			return db.Table<0>().Emplace(args...);
 		}
 
-		template <size_t I, typename K> auto Find(const K& k) const
+		template <size_t I, typename K> auto Find(const K& k, void* ref = nullptr) const
 		{
-			return db.Table<0>().Find<I>(k);
+			return db.Table<0>().Find<I>(k,ref);
 		}
 	};
 
@@ -185,9 +190,9 @@ namespace tdb
 			return db.Table<0>().Iterate(std::move(f));
 		}
 
-		template <typename K> auto Find(const K& k) const
+		template <typename K> auto Find(const K& k,void* ref=nullptr) const
 		{
-			return db.Table<0>().Find(k);
+			return db.Table<0>().Find(k,ref);
 		}
 
 		template <typename K, typename V> auto InsertLock(const K& k, const V& v)
@@ -195,9 +200,9 @@ namespace tdb
 			return db.Table<0>().InsertLock(k, v);
 		}
 
-		template <typename K> auto FindLock(const K& k) const
+		template <typename K> auto FindLock(const K& k, void* ref = nullptr) const
 		{
-			return db.Table<0>().FindLock(k);
+			return db.Table<0>().FindLock(k,ref);
 		}
 
 		template <typename K, typename V> bool InsertObject(const K& k, const V& v)
@@ -272,9 +277,9 @@ namespace tdb
 			return true;
 		}
 
-		template <typename K> uint8_t * FindObject(const K& k)
+		template <typename K> uint8_t * FindObject(const K& k, void* ref = nullptr)
 		{
-			auto ptr = db.Table<0>().Find(k);
+			auto ptr = db.Table<0>().Find(k,ref);
 
 			if (!ptr)
 				return nullptr;
@@ -282,9 +287,9 @@ namespace tdb
 			return GetObject(*ptr);
 		}
 
-		template <typename K> uint8_t* FindObjectLock(const K& k)
+		template <typename K> uint8_t* FindObjectLock(const K& k, void* ref = nullptr)
 		{
-			auto ptr = db.Table<0>().FindLock(k);
+			auto ptr = db.Table<0>().FindLock(k,ref);
 
 			if (!ptr)
 				return nullptr;
@@ -292,9 +297,9 @@ namespace tdb
 			return GetObject(*ptr);
 		}
 
-		template <typename K, typename SZ = uint16_t> gsl::span<uint8_t> FindSizedObject(const K& k)
+		template <typename K, typename SZ = uint16_t> gsl::span<uint8_t> FindSizedObject(const K& k, void* ref = nullptr)
 		{
-			auto ptr = db.Table<0>().Find(k);
+			auto ptr = db.Table<0>().Find(k,ref);
 
 			if (!ptr)
 				return nullptr;
@@ -309,9 +314,9 @@ namespace tdb
 			return gsl::span<uint8_t>(obj + sizeof(SZ), (size_t)*sz);
 		}
 
-		template <typename K, typename SZ = uint16_t> gsl::span<uint8_t> FindSizedObjectLock(const K& k)
+		template <typename K, typename SZ = uint16_t> gsl::span<uint8_t> FindSizedObjectLock(const K& k, void* ref = nullptr)
 		{
-			auto ptr = db.Table<0>().FindLock(k);
+			auto ptr = db.Table<0>().FindLock(k,ref);
 
 			if (!ptr)
 				return gsl::span<uint8_t>();

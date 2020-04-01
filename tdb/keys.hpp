@@ -40,7 +40,7 @@ namespace tdb
 			return true;
 		}
 
-		bool Equal(const KeyT& k)
+		bool Equal(const KeyT& k, void* ref_page = nullptr, void* ref_page2 = nullptr)
 		{
 			auto p1 = (uint64_t*)this;
 			auto p2 = (uint64_t*)&k;
@@ -68,7 +68,7 @@ namespace tdb
 			HashT(*this, *this);
 		}
 
-		int Compare(const KeyT & p,void* ref_page=nullptr)
+		int Compare(const KeyT & p,void* ref_page=nullptr, void* ref_page2 = nullptr)
 		{
 			if (first == p.first)
 			{

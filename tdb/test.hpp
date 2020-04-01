@@ -44,9 +44,9 @@ struct StringIndexKeyIndexedTableElement
         indexed_string[23] = '\0';
     }
 
-    auto Keys()
+    auto Keys(Link n)
     {
-        return std::make_tuple(indexed_string,key);
+        return std::make_tuple(n+sizeof(uint64_t),n+32);
     }
 
     uint64_t some_integer;
@@ -68,15 +68,18 @@ TEST_CASE("String and Key Indexed Table", "[tdb::]")
         dx.Emplace(2, "else", keys[2]);
         dx.Emplace(3, "qqzzz", keys[3]);
 
-        CHECK((0 == dx.Find<0>(string_viewz("help"))->some_integer));
-        CHECK((1 == dx.Find<0>(string_viewz("something"))->some_integer));
-        CHECK((2 == dx.Find<0>(string_viewz("else"))->some_integer));
-        CHECK((3 == dx.Find<0>(string_viewz("qqzzz"))->some_integer));
+        constexpr auto STRING = 0;
+        constexpr auto KEY = 1;
 
-        CHECK((0 == dx.Find<1>(keys[0])->some_integer));
-        CHECK((1 == dx.Find<1>(keys[1])->some_integer));
-        CHECK((2 == dx.Find<1>(keys[2])->some_integer));
-        CHECK((3 == dx.Find<1>(keys[3])->some_integer));
+        CHECK((0 == dx.Find<STRING>(0,string_voidz("help"))->some_integer));
+        CHECK((1 == dx.Find<STRING>(0,string_voidz("something"))->some_integer));
+        CHECK((2 == dx.Find<STRING>(0,string_voidz("else"))->some_integer));
+        CHECK((3 == dx.Find<STRING>(0,string_voidz("qqzzz"))->some_integer));
+
+        CHECK((0 == dx.Find<KEY>(0, key_void(keys[0]))->some_integer));
+        CHECK((1 == dx.Find<KEY>(0, key_void(keys[1]))->some_integer));
+        CHECK((2 == dx.Find<KEY>(0, key_void(keys[2]))->some_integer));
+        CHECK((3 == dx.Find<KEY>(0, key_void(keys[3]))->some_integer));
     }
 
     std::filesystem::remove_all("db.dat");
@@ -102,9 +105,9 @@ struct StringIndexedTableElement
         indexed_string[23] = '\0';
     }
 
-    auto Keys() 
+    auto Keys(Link n) 
     { 
-        return std::make_tuple(indexed_string);
+        return std::make_tuple(n+sizeof(uint64_t));
     }
 
     uint64_t some_integer;
@@ -123,10 +126,10 @@ TEST_CASE("String Indexed Table", "[tdb::]")
         dx.Emplace(2, "else");
         dx.Emplace(3, "qqzzz");
 
-        CHECK((0 == dx.Find<0>(string_viewz("help"))->some_integer));
-        CHECK((1 == dx.Find<0>(string_viewz("something"))->some_integer));
-        CHECK((2 == dx.Find<0>(string_viewz("else"))->some_integer));
-        CHECK((3 == dx.Find<0>(string_viewz("qqzzz"))->some_integer));
+        CHECK((0 == dx.Find<0>(0,string_voidz("help"))->some_integer));
+        CHECK((1 == dx.Find<0>(0,string_voidz("something"))->some_integer));
+        CHECK((2 == dx.Find<0>(0,string_voidz("else"))->some_integer));
+        CHECK((3 == dx.Find<0>(0,string_voidz("qqzzz"))->some_integer));
     }
 
     std::filesystem::remove_all("db.dat");
@@ -144,10 +147,10 @@ TEST_CASE("Surrogate String Simple", "[tdb::]")
         dx.Insert(dx.SetObject(string_viewz("abcdefg")).second, uint64_t(2));
         dx.Insert(dx.SetObject(string_viewz("zyxwvu")).second, uint64_t(3));
 
-        CHECK((0 == *dx.Find(string_viewz("Surrogate String"))));
-        CHECK((1 == *dx.Find(string_viewz("Surrogate WString"))));
-        CHECK((2 == *dx.Find(string_viewz("abcdefg"))));
-        CHECK((3 == *dx.Find(string_viewz("zyxwvu"))));
+        CHECK((0 == *dx.Find(0, string_voidz("Surrogate String"))));
+        CHECK((1 == *dx.Find(0, string_voidz("Surrogate WString"))));
+        CHECK((2 == *dx.Find(0, string_voidz("abcdefg"))));
+        CHECK((3 == *dx.Find(0, string_voidz("zyxwvu"))));
     }
 
     std::filesystem::remove_all("db.dat");

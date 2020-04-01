@@ -197,7 +197,7 @@ namespace tdb
 			{
 				int middle = (low + high) >> 1;
 
-				switch (keys[middle].Compare(k,ref_pages))
+				switch (keys[middle].Compare(k,ref_pages,nullptr))
 				{
 				case -1:
 					low = middle + 1;
@@ -234,7 +234,7 @@ namespace tdb
 			}
 		}
 
-		int Find(const key_t& k, pointer_t** pr, size_t depth, void* ref_pages)
+		int Find(const key_t& k, pointer_t** pr, size_t depth, void* ref_pages, void * ref_page2)
 		{
 			*pr = nullptr;
 
@@ -248,7 +248,7 @@ namespace tdb
 			{
 				int middle = (low + high) >> 1;
 
-				switch (keys[middle].Compare(k, ref_pages))
+				switch (keys[middle].Compare(k, ref_pages,ref_page2))
 				{
 				case -1:
 					low = middle + 1;
@@ -334,7 +334,7 @@ namespace tdb
 					continue;
 				}
 
-				if (keys[low].Equal(k))
+				if (keys[low].Equal(k, ref_pages,nullptr))
 				{
 					overwrite = { pointers + low,true };
 					//pointers[middle] = p; // We allow the call to update the existing object if needed.
@@ -358,7 +358,7 @@ namespace tdb
 				return ((low-1) * link_c / bin_c) + 1;
 		}
 
-		int Find(const key_t& k, pointer_t** pr, size_t depth, void* ref_pages)
+		int Find(const key_t& k, pointer_t** pr, size_t depth, void* ref_pages, void* ref_page2)
 		{
 			*pr = nullptr;
 
@@ -367,7 +367,7 @@ namespace tdb
 
 			int bin = (*(((uint16_t*)&k) + depth) % bin_c);
 
-			if (keys[bin].Equal(k))
+			if (keys[bin].Equal(k,ref_pages,ref_page2))
 			{
 				*pr = pointers + bin;
 				return 0;
@@ -388,7 +388,7 @@ namespace tdb
 					continue;
 				}
 
-				if (keys[low].Equal(k))
+				if (keys[low].Equal(k, ref_pages, ref_page2))
 				{
 					*pr = pointers + low;
 					return 0;
@@ -406,36 +406,47 @@ namespace tdb
 
 	template <typename R, typename int_t> struct _OrderedSurrogateString
 	{
-		static_assert(sizeof(int_t) >= sizeof(size_t));
-
 		_OrderedSurrogateString() {}
 		_OrderedSurrogateString(int_t t): sz_offset(t){}
 
-		_OrderedSurrogateString(const char * psz)
-		{
-			//This is kindof tricky, handling finds requires an external pointer.
-			//If int_t is >= sizeof(size_t) we can just use it as a pointer and that is how this is implemented.
-
-			sz_offset = (int_t)psz;
-			sz_offset |= 0x8000000000000000; // ASSUMES 64 bit, todo fix this
-		}
-
-		_OrderedSurrogateString(std::string_view v)
-			: _OrderedSurrogateString((const char*)v.data()) {}
-
 		int_t sz_offset = 0;
 
-		int Compare(const _OrderedSurrogateString& rs, void* _ref_page)
+		int Compare(const _OrderedSurrogateString& rs, void* _ref_page, void * direct_page)
 		{
 			auto ref_page = (R*)_ref_page;
 
-			auto is_pointer = [](auto s) { return 0 != (s & 0x8000000000000000); };
-			auto as_pointer = [](auto s) { return (uint8_t*)(s & 0x7fffffffffffffff); };
-
-			auto l = (const char*) ((is_pointer(sz_offset)) ? as_pointer(sz_offset) : ref_page->GetObject(sz_offset));
-			auto r = (const char*) ((is_pointer(rs.sz_offset)) ? as_pointer(rs.sz_offset) : ref_page->GetObject(rs.sz_offset));
+			auto l = (const char*) ref_page->GetObject(sz_offset);
+			auto r = (const char*) ((!rs.sz_offset) ? (uint8_t*)direct_page : ref_page->GetObject(rs.sz_offset));
 
 			return strcmp(l, r);
+		}
+	};
+
+	template <typename R, typename int_t, typename key_t> struct _SurrogateKey
+	{
+		_SurrogateKey() {}
+		_SurrogateKey(int_t t) : sz_offset(t) {}
+
+		int_t sz_offset = 0;
+
+		int Compare(const _SurrogateKey& rs, void* _ref_page, void* direct_page)
+		{
+			auto ref_page = (R*)_ref_page;
+
+			auto l = (key_t*)ref_page->GetObject(sz_offset);
+			auto r = (key_t*)((!rs.sz_offset) ? (uint8_t*)direct_page : ref_page->GetObject(rs.sz_offset));
+
+			return l->Compare(*r);
+		}
+
+		bool Equal(const _SurrogateKey& rs, void* _ref_page, void* direct_page)
+		{
+			auto ref_page = (R*)_ref_page;
+
+			auto l = (key_t*)ref_page->GetObject(sz_offset);
+			auto r = (key_t*)((!rs.sz_offset) ? (uint8_t*)direct_page : ref_page->GetObject(rs.sz_offset));
+
+			return l->Equal(*r);
 		}
 	};
 
@@ -444,11 +455,24 @@ namespace tdb
 		return std::string_view(t, L);
 	}
 
+	void* string_voidz(const char * t)
+	{
+		return (void*)t;
+	}
+
+	template < typename T >void* key_void(T& t)
+	{
+		return (void*)&t;
+	}
+
 #pragma warning( pop )
 #pragma pack(pop)
 
 	template <typename R> using OrderedSurrogateStringPointer = _OrderedListNode<uint64_t, _OrderedSurrogateString<R,uint64_t>, uint64_t, uint64_t, 4092, 4, 8>;
 	static_assert(sizeof(OrderedSurrogateStringPointer<void>) == 64 * 1024);
+
+	template <typename R> using SurrogateKeyPointer = _OrderedListNode<uint64_t, _SurrogateKey<R, uint64_t,Key32>, uint64_t, uint64_t, 4092, 4, 8>;
+	static_assert(sizeof(SurrogateKeyPointer<void>) == 64 * 1024);
 
 	//8 + 40 * N(1637) + 16 + 32 + 0
 	using OrderedListPointer = _OrderedListNode<uint64_t, Key32, uint64_t, uint64_t, 1637, 4, 0>;
@@ -548,7 +572,7 @@ public:
 				return _Iterate(Root(),std::move(f));
 		}
 
-		pointer_t* Find(const key_t& k) const
+		pointer_t* Find(const key_t& k, void* ref_page=nullptr) const
 		{
 			node_t* current = Root();
 
@@ -561,7 +585,7 @@ public:
 			while (current)
 			{
 				pointer_t* pr;
-				int result = current->Find(k, &pr, depth++, (void*)io);
+				int result = current->Find(k, &pr, depth++, (void*)io,ref_page);
 
 				if (!result)
 					return pr;
@@ -629,7 +653,7 @@ public:
 			return { nullptr,false };
 		}
 
-		pointer_t* FindLock(const key_t& k) const
+		pointer_t* FindLock(const key_t& k, void* ref_page = nullptr) const
 		{
 			node_t* current = Root();
 
@@ -644,7 +668,7 @@ public:
 				ScopedLock lock(*current); //Only works if no remap is allowed
 
 				pointer_t* pr;
-				int result = current->Find(k, &pr,depth++, (void*)io);
+				int result = current->Find(k, &pr,depth++, (void*)io, ref_page);
 
 				if (!result)
 					return pr;
