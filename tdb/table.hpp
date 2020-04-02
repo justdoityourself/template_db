@@ -208,6 +208,35 @@ namespace tdb
 
 
 
+	template < typename R, typename element_t, typename ... index_t > using FixedTable = _Table<R, element_t, index_t...>;
+
+	template < typename int_t, typename link_t, size_t _max_pages, size_t _lookup_padding, size_t _page_elements, size_t _page_padding, typename child_t > struct TableElementBase : public child_t
+	{
+		static const size_t max_pages = _max_pages;
+		static const size_t page_elements = _page_elements;
+		static const size_t lookup_padding = _lookup_padding;
+		static const size_t page_padding = _page_padding;
+
+		using Int = int_t;
+		using Link = link_t;
+	};
+
+	template < size_t page_s, typename int_t, typename link_t, typename child_t >
+	using TableElementBuilder = TableElementBase<   int_t,
+		link_t,
+		(page_s - sizeof(int_t) * 2) / sizeof(link_t),
+		(page_s - sizeof(int_t) * 2) % sizeof(link_t),
+		page_s / sizeof(child_t),
+		page_s % sizeof(child_t),
+		child_t >;
+
+	template < typename child_t, size_t page_s = 64 * 1024, typename int_t = uint64_t> using SimpleTableElementBuilder = TableElementBuilder<page_s, int_t, int_t, child_t>;
+
+
+
+
+
+
 	template < typename R, typename element_t, typename ... index_t > class _GrowingTable
 	{
 		using link_t = typename element_t::Link;

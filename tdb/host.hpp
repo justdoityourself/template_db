@@ -30,6 +30,7 @@ namespace tdb
 		using R::Incidental;
 		using R::Close;
 		using R::GetObject;
+		using R::SetObject;
 
 		void Validate()
 		{
@@ -64,6 +65,27 @@ namespace tdb
 		const auto & ReadOnlyIndex() const
 		{
 			return get<0>(tables);
+		}
+	};
+
+	template < typename R, size_t reserve_c > class ReserveTables
+	{
+
+	public:
+
+		ReserveTables() {}
+
+		void Open(R* io, size_t& _n)
+		{
+			if (io->size() <= _n)
+			{
+				auto s = io->AllocateSpan(reserve_c);
+
+				for (size_t i = 0; i < reserve_c; i++, s++)
+					std::fill(s->begin(), s->end(), 0x77);
+			}
+
+			_n += reserve_c;
 		}
 	};
 }

@@ -4,6 +4,7 @@
 
 #include <array>
 #include <stdexcept>
+#include <atomic>
 
 namespace tdb
 {
@@ -44,6 +45,15 @@ namespace tdb
 		uint8_t* GetObject(uint64_t off) const
 		{
 			return M::offset(off);
+		}
+
+		template< typename T> auto SetObject(const T& t)
+		{
+			auto segment = Incidental(t.size());
+
+			std::copy(t.begin(), t.end(), segment.first);
+
+			return segment;
 		}
 
 		uint64_t GetReference(uint8_t*ptr)

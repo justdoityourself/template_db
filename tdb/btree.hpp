@@ -105,7 +105,7 @@ namespace tdb
 
 		int_t count = 0;
 
-		int_t header_guard = (int_t)_guard; //Moved to tail for better cacheline alignement.
+		int_t checksum = (int_t)0;
 
 		int_t footer_guard = (int_t)_guard;
 
@@ -113,7 +113,7 @@ namespace tdb
 		{
 			static constexpr auto lock_delay = std::chrono::milliseconds(5);
 
-			auto lock = (std::atomic<int_t> * )&header_guard;
+			auto lock = (std::atomic<int_t> * )& footer_guard;
 
 			int_t expected = (int_t)_guard;
 			while (!lock->compare_exchange_strong(expected, 0))
@@ -127,7 +127,7 @@ namespace tdb
 		{
 			static constexpr auto lock_delay = std::chrono::milliseconds(5);
 
-			auto lock = (std::atomic<int_t>*) & header_guard;
+			auto lock = (std::atomic<int_t>*) & footer_guard;
 
 			while (lock->load() == 0)
 				std::this_thread::sleep_for(lock_delay);
@@ -135,7 +135,7 @@ namespace tdb
 
 		void Unlock()
 		{
-			auto lock = (std::atomic<int_t> * )&header_guard;
+			auto lock = (std::atomic<int_t> * )& footer_guard;
 
 			lock->store((int_t)_guard);
 		}
@@ -500,7 +500,7 @@ namespace tdb
 			root_n = _n++;
 			io = _io;
 
-			if (io->size() <= root_n)
+			if (io->size() < root_n)
 			{
 				auto r = &io->template Allocate<node_t>();
 				r->Init();
@@ -728,4 +728,35 @@ public:
 			return { nullptr,false };
 		}
 	};
+
+
+
+	template <size_t page_s, typename int_t, typename key_t, typename pointer_t, typename link_t, size_t link_c>
+	using OrderedListBuilder = _OrderedListNode<	int_t,
+													key_t,
+													pointer_t,
+													link_t,
+													(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) / (sizeof(key_t) + sizeof(pointer_t)),
+													link_c,
+													(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) % (sizeof(key_t) + sizeof(pointer_t)) >;
+
+
+	template <size_t page_s, typename int_t, typename key_t, size_t link_c = 4> using SimpleOrderedListBuilder = OrderedListBuilder<page_s, int_t, key_t, int_t, int_t, link_c>;
+
+
+	template <size_t page_s, typename int_t, typename key_t, typename pointer_t, typename link_t, size_t link_c, size_t fuzzy_c>
+	using FuzzyHashBuilder = _FuzzyHashNode <	int_t,
+												key_t,
+												pointer_t,
+												link_t,
+												(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) / (sizeof(key_t) + sizeof(pointer_t)),
+												link_c,
+												fuzzy_c,
+												(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) % (sizeof(key_t) + sizeof(pointer_t)) >;
+
+	template <size_t page_s, typename int_t, typename key_t, size_t fuzzy_c = 4, size_t link_c = 4> using SimpleFuzzyHashBuilder = FuzzyHashBuilder<page_s, int_t, key_t, int_t, int_t, link_c, fuzzy_c>;
+
+
+
+	template < typename R, typename N > using BTree = _BTree<R, N>;
 }

@@ -13,6 +13,8 @@
 #include "recycling.hpp"
 #include "mapping.hpp"
 
+#include "pages.hpp"
+
 namespace tdb
 {
 	/*
@@ -21,7 +23,7 @@ namespace tdb
 
 	/*
 		This routing layer is super yucky, brainstorming a better way...
-		
+
 		Factors are recycler implementation, page size, map grow size, index type, table configurations! And Finally a Database Design!
 
 		Recyclers:
@@ -65,40 +67,12 @@ namespace tdb
 		... TODOs:
 
 		1.	This file should just implement builders, builders will be the API. Legacy definitions eventually to be moved into legacy.hpp
-		2.	This file to be renamed to builder.hpp
+		X 2.	This file to be renamed to builder.hpp X
 		3.	Database.hpp to implement common configurations instead of builder stuff.
 		4.	The Index and Table class below should be merged with the host _database class and deprecated.
 	*/
 
 
-
-	/*
-		On Disk, Read / Write, Memory Mapped Databases
-	*/
-
-	template <size_t GROW, size_t PAGE = 64 * 1024> using SyncMap = _Recycling< _MapFile<GROW>, PAGE >; //Single Map, growth remaps entire address space therefore cannot be used with multiple threads.
-	template <size_t GROW, size_t PAGE = 64 * 1024> using AsyncMap = _Recycling< _MapList<GROW>, PAGE >; //List of maps, address space will always remain valid even when object grows, can be used with multiple threads.
-
-
-
-	/*
-		In Memory, Read Only Databases
-	*/
-
-	template <size_t GROW, size_t PAGE = 64 * 1024> using SyncMemoryView = _Recycling< _ReadMemoryFile<GROW>, PAGE >; //Single buffer database object.
-	template <size_t GROW, size_t PAGE = 64 * 1024> using AsyncMemoryView = _Recycling< _ReadMemoryList<GROW>, PAGE >; //Multi buffer database object.
-
-
-
-	/*
-		Builders
-	*/
-
-	template <typename RECYCLER, typename NODE, typename _INDEX> using IndexBuilder = _INDEX<RECYCLER, NODE>;
-
-	template <typename RECYCLER, typename ELEMENT, typename _TABLE, typename ... INDEXLIST> using TableBuilder = _TABLE<RECYCLER, ELEMENT, INDEXLIST...>;
-
-	template <typename RECYCLER, typename ... TABLELIST> using DatabaseBuilder = _Database<RECYCLER, TABLELIST...>;
 
 	/*
 		Legacy / Compatiblity
@@ -136,7 +110,7 @@ namespace tdb
 	template <size_t S> using _IndexSortedList = _Database< _R<S>, _T<S> >;
 	template <size_t S> using _IndexSortedSurrogateString = _Database< _R<S>, _SS<S> >;
 	template <size_t S> using _IndexSortedSurrogateKey = _Database< _R<S>, _SK<S> >;
-	template <size_t S, size_t F = 4> using _IndexFuzzyHash = _Database< _R<S>, _F<S,F> >;
+	template <size_t S, size_t F = 4> using _IndexFuzzyHash = _Database< _R<S>, _F<S, F> >;
 	template <size_t S, size_t F = 4> using _BigIndexFuzzyHash = _Database< _R256<S>, _F256<S, F> >;
 
 
@@ -158,14 +132,14 @@ namespace tdb
 
 
 	template <typename element_t, size_t S> using _StringIndexTable = _Database< _SGR<S>,
-																				_Table< _SGR<S>, element_t, _SGSS<S> >
-																			   >;
+		_Table< _SGR<S>, element_t, _SGSS<S> >
+	>;
 
 	template <typename element_t, size_t S> using _StringIndexKeyIndexTable = _Database< _SGR<S>,
-																				_Table< _SGR<S>, element_t, _SGSS<S>, _SGSK<S> >
-																			   >;
+		_Table< _SGR<S>, element_t, _SGSS<S>, _SGSK<S> >
+	>;
 
-	template < typename element_t, size_t G = 1024 * 1024, typename TABLE = _StringIndexTable<element_t,G> > class Table
+	template < typename element_t, size_t G = 1024 * 1024, typename TABLE = _StringIndexTable<element_t, G> > class Table
 	{
 		TABLE db;
 
@@ -200,7 +174,7 @@ namespace tdb
 
 		template <size_t I, typename K> auto Find(const K& k, void* ref = nullptr) const
 		{
-			return db.Table<0>().Find<I>(k,ref);
+			return db.Table<0>().Find<I>(k, ref);
 		}
 
 		template <size_t I> auto SurrogateFind(void* ref) const
@@ -217,7 +191,7 @@ namespace tdb
 	public:
 		Index() {}
 
-		template < typename T > Index(T & stream)
+		template < typename T > Index(T& stream)
 		{
 			db.Open(stream);
 		}
@@ -262,7 +236,7 @@ namespace tdb
 			return db.Incidental(s);
 		}
 
-		template< typename T> auto SetObject(const T & t)
+		template< typename T> auto SetObject(const T& t)
 		{
 			auto segment = Incidental(t.size());
 
@@ -276,14 +250,14 @@ namespace tdb
 			return db.Table<0>().Insert(k, v);
 		}
 
-		template <typename F> auto Iterate(F &&f) const
+		template <typename F> auto Iterate(F&& f) const
 		{
 			return db.Table<0>().Iterate(std::move(f));
 		}
 
-		template <typename K> auto Find(const K& k,void* ref=nullptr) const
+		template <typename K> auto Find(const K& k, void* ref = nullptr) const
 		{
-			return db.Table<0>().Find(k,ref);
+			return db.Table<0>().Find(k, ref);
 		}
 
 		template <typename K, typename V> auto InsertLock(const K& k, const V& v)
@@ -293,18 +267,18 @@ namespace tdb
 
 		template <typename K> auto FindLock(const K& k, void* ref = nullptr) const
 		{
-			return db.Table<0>().FindLock(k,ref);
+			return db.Table<0>().FindLock(k, ref);
 		}
 
 		template <typename K, typename V> bool InsertObject(const K& k, const V& v)
 		{
-			auto [ptr,status] = db.Table<0>().Insert(k, uint64_t(0));
+			auto [ptr, status] = db.Table<0>().Insert(k, uint64_t(0));
 
 			if (status) return false;
 
 			auto [iptr, offset] = Incidental(v.size());
 
-			if (!iptr) 
+			if (!iptr)
 				return false;
 
 			std::copy(v.begin(), v.end(), iptr);
@@ -343,7 +317,7 @@ namespace tdb
 
 			auto sz = (SZ*)iptr;
 			*sz = (SZ)v.size();
-			std::copy(v.begin(), v.end(), iptr+sizeof(SZ));
+			std::copy(v.begin(), v.end(), iptr + sizeof(SZ));
 			*ptr = offset;
 
 			return true;
@@ -368,9 +342,9 @@ namespace tdb
 			return true;
 		}
 
-		template <typename K> uint8_t * FindObject(const K& k, void* ref = nullptr)
+		template <typename K> uint8_t* FindObject(const K& k, void* ref = nullptr)
 		{
-			auto ptr = db.Table<0>().Find(k,ref);
+			auto ptr = db.Table<0>().Find(k, ref);
 
 			if (!ptr)
 				return nullptr;
@@ -380,7 +354,7 @@ namespace tdb
 
 		template <typename K> uint8_t* FindObjectLock(const K& k, void* ref = nullptr)
 		{
-			auto ptr = db.Table<0>().FindLock(k,ref);
+			auto ptr = db.Table<0>().FindLock(k, ref);
 
 			if (!ptr)
 				return nullptr;
@@ -390,7 +364,7 @@ namespace tdb
 
 		template <typename K, typename SZ = uint16_t> gsl::span<uint8_t> FindSizedObject(const K& k, void* ref = nullptr)
 		{
-			auto ptr = db.Table<0>().Find(k,ref);
+			auto ptr = db.Table<0>().Find(k, ref);
 
 			if (!ptr)
 				return nullptr;
@@ -407,7 +381,7 @@ namespace tdb
 
 		template <typename K, typename SZ = uint16_t> gsl::span<uint8_t> FindSizedObjectLock(const K& k, void* ref = nullptr)
 		{
-			auto ptr = db.Table<0>().FindLock(k,ref);
+			auto ptr = db.Table<0>().FindLock(k, ref);
 
 			if (!ptr)
 				return gsl::span<uint8_t>();
@@ -430,16 +404,16 @@ namespace tdb
 
 	using MemoryHashmap = Index<1024 * 1024, _MemoryIndexFuzzyHash<1024 * 1024>>;
 
-	using SmallStringIndex = Index<1024*1024, _IndexSortedSurrogateStringSafe<1024*1024>>;
+	using SmallStringIndex = Index<1024 * 1024, _IndexSortedSurrogateStringSafe<1024 * 1024>>;
 
 	using SmallIndex = Index<>;
 	using SmallIndexReadOnly = const Index<>;
 
-	using MediumIndex = Index<8*1024*1024>;
+	using MediumIndex = Index<8 * 1024 * 1024>;
 	using MediumIndexReadOnly = const Index<8 * 1024 * 1024>;
 
 	using LargeIndex = Index<64 * 1024 * 1024>;
-	using LargeIndexReadOnly = const Index<64*1024*1024>;
+	using LargeIndexReadOnly = const Index<64 * 1024 * 1024>;
 
 	using LargeIndexS = Index<64 * 1024 * 1024, _IndexSortedListSafe<64 * 1024 * 1024>>;
 	using LargeIndexReadOnlyS = const Index<64 * 1024 * 1024, _IndexSortedListSafe<64 * 1024 * 1024>>;
@@ -466,20 +440,20 @@ namespace tdb
 	using LargeHashmapReadOnlySafe = const Index<64 * 1024 * 1024, _IndexFuzzyHashSafe<64 * 1024 * 1024>>;
 
 	using LargeHashmapS = Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024, 1>>;
-	using LargeHashmapReadOnlyS = const Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024,1>>;
+	using LargeHashmapReadOnlyS = const Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024, 1>>;
 
 	using LargeHashmapM = Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024, 2>>;
 	using LargeHashmapReadOnlyM = const Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024, 2>>;
 
-	using LargeHashmapL = Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024,8>>;
-	using LargeHashmapReadOnlyL = const Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024,8>>;
+	using LargeHashmapL = Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024, 8>>;
+	using LargeHashmapReadOnlyL = const Index<64 * 1024 * 1024, _IndexFuzzyHash<64 * 1024 * 1024, 8>>;
 
-	template < size_t C = 8, size_t G = 8*1024*1024, typename INDEX = _IndexSortedList<G> > class MapReduceT
+	template < size_t C = 8, size_t G = 8 * 1024 * 1024, typename INDEX = _IndexSortedList<G> > class MapReduceT
 	{
 		std::array<INDEX, C> dbr;
 
 	public:
-		MapReduceT(string_view name) 
+		MapReduceT(string_view name)
 		{
 			auto idx = 0;
 			for (auto& e : dbr)

@@ -39,11 +39,13 @@ namespace tdb
 		{
 			io = _io;
 
-			index.Open(io, n);
+			index.Open(io, _n);
 		}
 
 		template <typename T, typename V> void Write(const T & k, const V & v)
 		{
+			if (!v.size()) return;
+
 			auto [ptr, overwrite] = index.Insert(k,link_t(0));
 
 			if (!overwrite)
@@ -66,26 +68,31 @@ namespace tdb
 				uint8_t* bin = (uint8_t*)(lh + 1);
 				std::copy(v.begin(), v.end(), bin);
 
-				ptr = offset;
+				*ptr = offset;
 				return;
 			}
 
 			auto _header = io->GetObject(*ptr);
+
 			auto ph = (header*)_header;
-			auto lh = (link*)((ph->last) ? io->GetObject(ph->last) : (bucket + sizeof(header)));
-			auto rem = v.size(), off = 0;
+			auto lh = (link*)((ph->last) ? io->GetObject(ph->last) : (_header + sizeof(header)));
+
+			size_t rem = v.size(), off = 0;
 
 			uint8_t* bin = (uint8_t*)(lh + 1);
-			auto available = min_alloc - lh->size();
+			auto available = (lh->size > min_alloc) ? 0 : min_alloc - lh->size;
 
 			if (available > rem)
 				available = rem;
 				
-			std::copy(v.begin(), v.begin() + available, bin + lh.size);
+			if (available)
+			{
+				std::copy(v.begin(), v.begin() + available, bin + lh->size);
 
-			off += available;
-			rem -= available;
-			lh.size += available;
+				off += available;
+				rem -= available;
+				lh->size += available;
+			}
 
 			if (rem)
 			{
@@ -96,7 +103,7 @@ namespace tdb
 
 				auto [bucket, offset] = io->Incidental(sizeof(link) + size);
 
-				auto lh2 = (link*)buck;
+				auto lh2 = (link*)bucket;
 
 				lh2->next = 0;
 				lh2->size = rem;
@@ -123,19 +130,43 @@ namespace tdb
 			auto lh = (link*)(ph + 1);
 
 			size_t off = 0;
-			uint8_t* bin = (uint8_t*)(lh + 1);
 
 			std::vector<uint8_t> result(ph->total);
 
 			do
 			{
-				std::copy(bin,bin+lh.size,result.data()+off);
+				uint8_t* bin = (uint8_t*)(lh + 1);
+
+				std::copy(bin,bin+lh->size,result.data()+off);
 				off += lh->size;
 
-				lh = (link*)((lh->next) ? io->GetObject(*ptr) : nullptr);
+				lh = (link*)((lh->next) ? io->GetObject(lh->next) : nullptr);
 			} while (lh);
 
 			return result;
 		}
+
+		template < typename K, typename F > void Stream(const K& k, F && f)
+		{
+			auto ptr = index.Find(k);
+
+			if (!ptr) return;
+
+			auto _header = io->GetObject(*ptr);
+			auto ph = (header*)_header;
+			auto lh = (link*)(ph + 1);
+
+			do
+			{
+				uint8_t* bin = (uint8_t*)(lh + 1);
+
+				if (!f(gsl::span<uint8_t>(bin, lh->size)))
+					break;
+
+				lh = (link*)((lh->next) ? io->GetObject(lh->next) : nullptr);
+			} while (lh);
+		}
 	};
+
+	template < typename R, typename index_t > using Stream = _StreamBucket<R, uint64_t, uint64_t, 1024, index_t>;
 }

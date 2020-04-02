@@ -36,16 +36,10 @@
     <ClInclude Include="mio.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tdb\database.hpp">
-      <Filter>tdb</Filter>
-    </ClInclude>
     <ClInclude Include="tdb\host.hpp">
       <Filter>tdb</Filter>
     </ClInclude>
     <ClInclude Include="tdb\btree.hpp">
-      <Filter>tdb</Filter>
-    </ClInclude>
-    <ClInclude Include="tdb\test.hpp">
       <Filter>tdb</Filter>
     </ClInclude>
     <ClInclude Include="tdb\benchmark.hpp">
@@ -60,10 +54,25 @@
     <ClInclude Include="tdb\bucket.hpp">
       <Filter>tdb</Filter>
     </ClInclude>
-    <ClInclude Include="tdb\pages.hpp">
+    <ClInclude Include="tdb\builder.hpp">
       <Filter>tdb</Filter>
     </ClInclude>
-    <ClInclude Include="tdb\builder.hpp">
+    <ClInclude Include="tdb\legacy.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
+    <ClInclude Include="tdb\databases.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
+    <ClInclude Include="tdb\interface.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
+    <ClInclude Include="tdb\test_legacy.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
+    <ClInclude Include="tdb\test.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
+    <ClInclude Include="tdb\pages.hpp">
       <Filter>tdb</Filter>
     </ClInclude>
   </ItemGroup>

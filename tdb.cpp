@@ -6,6 +6,7 @@
 #define CATCH_CONFIG_RUNNER
 #include "catch.hpp"
 #include "tdb/test.hpp"
+#include "tdb/test_legacy.hpp"
 
 int main(int argc, char* argv[])
 {
