@@ -22,6 +22,45 @@ using namespace d8u::util;
 TEST_CASE("Network Layer", "[tdb::]")
 {
     //NETWORK LAYER TODO
+
+    /*The network server is implemented, client needs implemented*/
+
+    /*There is a deeper question holding up the show here, it is that of protocol and format*/
+
+    /*It would be fun to implement a SQL compatability layer*/
+}
+
+TEST_CASE("Streaming Bucket", "[tdb::]")
+{
+    std::filesystem::remove_all("db.dat");
+
+    {
+ 
+    }
+
+    std::filesystem::remove_all("db.dat");
+}
+
+TEST_CASE("Endless Table", "[tdb::]")
+{
+    std::filesystem::remove_all("db.dat");
+
+    {
+
+    }
+
+    std::filesystem::remove_all("db.dat");
+}
+
+TEST_CASE("Fixed Table", "[tdb::]")
+{
+    std::filesystem::remove_all("db.dat");
+
+    {
+
+    }
+
+    std::filesystem::remove_all("db.dat");
 }
 
 struct StringIndexKeyIndexedTableElement

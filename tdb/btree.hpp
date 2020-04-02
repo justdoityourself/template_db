@@ -468,36 +468,7 @@ namespace tdb
 #pragma warning( pop )
 #pragma pack(pop)
 
-	template <typename R> using OrderedSurrogateStringPointer = _OrderedListNode<uint64_t, _OrderedSurrogateString<R,uint64_t>, uint64_t, uint64_t, 4092, 4, 8>;
-	static_assert(sizeof(OrderedSurrogateStringPointer<void>) == 64 * 1024);
 
-	template <typename R> using SurrogateKeyPointer = _OrderedListNode<uint64_t, _SurrogateKey<R, uint64_t,Key32>, uint64_t, uint64_t, 4092, 4, 8>;
-	static_assert(sizeof(SurrogateKeyPointer<void>) == 64 * 1024);
-
-	//8 + 40 * N(1637) + 16 + 32 + 0
-	using OrderedListPointer = _OrderedListNode<uint64_t, Key32, uint64_t, uint64_t, 1637, 4, 0>;
-	static_assert(sizeof(OrderedListPointer) == 64 * 1024);
-
-	template <size_t F> using FuzzyHashPointerT = _FuzzyHashNode<uint64_t, Key32, uint64_t, uint64_t, 1637, 4, F, 0>;
-	static_assert(sizeof(FuzzyHashPointerT<1>) == 64 * 1024);
-
-	template <size_t F> using BigFuzzyHashPointerT = _FuzzyHashNode<uint64_t, Key32, uint64_t, uint64_t, 6552, 4, F, 8>;
-	static_assert(sizeof(BigFuzzyHashPointerT<1>) == 256 * 1024);
-
-	using FuzzyHashPointer = _FuzzyHashNode<uint64_t, Key32, uint64_t, uint64_t, 1637, 4, 4, 0>;
-	static_assert(sizeof(FuzzyHashPointer) == 64 * 1024);
-
-	//8 + 64 * N(1023) + 16 + 32 + 8
-	using OrderedListKey = _OrderedListNode<uint64_t, Key32, Key32, uint64_t, 1023, 4, 8>;
-	static_assert(sizeof(OrderedListKey) == 64 * 1024);
-
-	//8 + 64 * N(1023) + 16 + 32 + 8
-	using OrderedListKP = _OrderedListNode<uint64_t, Key32, KeyP, uint64_t, 1023, 4, 8>;
-	static_assert(sizeof(OrderedListKP) == 64 * 1024);
-
-	//8 + 64 * N(1023) + 16 + 32 + 8
-	using OrderedListKP2 = _OrderedListNode<uint64_t, Key32, KeyP2, uint64_t, 1023, 4, 8>;
-	static_assert(sizeof(OrderedListKP2) == 64 * 1024);
 
 	template < typename R, typename node_t > class _BTree
 	{

@@ -19,6 +19,92 @@ namespace tdb
 		With great configuration comes huge blocks of template routing:
 	*/
 
+	/*
+		This routing layer is super yucky, brainstorming a better way...
+		
+		Factors are recycler implementation, page size, map grow size, index type, table configurations! And Finally a Database Design!
+
+		Recyclers:
+
+		MapFile
+		MapList
+		Memory
+		MemoryList
+
+		Page Sizes:
+
+		64KB
+		256KB
+		...
+
+		Indexes:
+
+		OrderListPoint
+		FuzzyHashPointer
+		OrderedSurrogateStringPointer
+		SurrogateKeyPointer
+		...
+
+		Non-Pointer Indexes:
+
+		StreamBucket
+		FixedBucket
+
+		Table Bases:
+
+		Fixed
+		Endless
+
+		Database Simplifications:
+
+		Table
+		Index
+
+
+
+		... TODOs:
+
+		1.	This file should just implement builders, builders will be the API. Legacy definitions eventually to be moved into legacy.hpp
+		2.	This file to be renamed to builder.hpp
+		3.	Database.hpp to implement common configurations instead of builder stuff.
+		4.	The Index and Table class below should be merged with the host _database class and deprecated.
+	*/
+
+
+
+	/*
+		On Disk, Read / Write, Memory Mapped Databases
+	*/
+
+	template <size_t GROW, size_t PAGE = 64 * 1024> using SyncMap = _Recycling< _MapFile<GROW>, PAGE >; //Single Map, growth remaps entire address space therefore cannot be used with multiple threads.
+	template <size_t GROW, size_t PAGE = 64 * 1024> using AsyncMap = _Recycling< _MapList<GROW>, PAGE >; //List of maps, address space will always remain valid even when object grows, can be used with multiple threads.
+
+
+
+	/*
+		In Memory, Read Only Databases
+	*/
+
+	template <size_t GROW, size_t PAGE = 64 * 1024> using SyncMemoryView = _Recycling< _ReadMemoryFile<GROW>, PAGE >; //Single buffer database object.
+	template <size_t GROW, size_t PAGE = 64 * 1024> using AsyncMemoryView = _Recycling< _ReadMemoryList<GROW>, PAGE >; //Multi buffer database object.
+
+
+
+	/*
+		Builders
+	*/
+
+	template <typename RECYCLER, typename NODE, typename _INDEX> using IndexBuilder = _INDEX<RECYCLER, NODE>;
+
+	template <typename RECYCLER, typename ELEMENT, typename _TABLE, typename ... INDEXLIST> using TableBuilder = _TABLE<RECYCLER, ELEMENT, INDEXLIST...>;
+
+	template <typename RECYCLER, typename ... TABLELIST> using DatabaseBuilder = _Database<RECYCLER, TABLELIST...>;
+
+	/*
+		Legacy / Compatiblity
+	*/
+
+
 	template <size_t S> using _R = _Recycling< _MapFile<S>, 64 * 1024 >;
 	template <size_t S> using _SGR = _Recycling< _MapList<S>, 64 * 1024 >;
 
@@ -115,6 +201,11 @@ namespace tdb
 		template <size_t I, typename K> auto Find(const K& k, void* ref = nullptr) const
 		{
 			return db.Table<0>().Find<I>(k,ref);
+		}
+
+		template <size_t I> auto SurrogateFind(void* ref) const
+		{
+			return db.Table<0>().Find<I>(0, ref);
 		}
 	};
 
