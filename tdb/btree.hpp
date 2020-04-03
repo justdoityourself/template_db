@@ -276,6 +276,215 @@ namespace tdb
 		}
 	};
 
+	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, size_t padding_c = 0 > struct _OrderedMultiListNode : public _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>
+	{
+		uint8_t padding[padding_c];
+
+		using Pointer = pointer_t;
+		using Key = key_t;
+		using Int = int_t;
+		using Link = link_t;
+		static const int Bins = bin_c;
+		static const int Links = link_c;
+		static const int Padding = padding_c;
+
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::keys;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::pointers;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::links;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::count;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::Expand;
+
+		void Init() {}
+
+		size_t max_rec() { return (size_t)-1; }
+
+		int Insert(const key_t& k, const pointer_t& p, pair<pointer_t*, bool>& overwrite, size_t depth, void* ref_pages)
+		{
+			overwrite = { nullptr,false };
+			if (!count)
+			{
+				keys[0] = k;
+				pointers[0] = p;
+				count++;
+
+				overwrite = { pointers,false };
+
+				return 0;
+			}
+
+			int low = 0;
+			int high = (int)count - 1;
+
+			while (low <= high)
+			{
+				int middle = (low + high) >> 1;
+
+				switch (keys[middle].Compare(k, ref_pages, nullptr))
+				{
+				case -1:
+					low = middle + 1;
+					break;
+				case 1:
+					high = middle - 1;
+					break;
+				case 0:
+
+					if (count == bin_c)
+					{
+						//To standardize which node pathway we use we must find the lower bound of this match:
+						//
+
+						while (middle > 0 && keys[middle - 1].Compare(k, ref_pages, nullptr) == 0)
+							middle--;
+
+						return (middle * link_c / bin_c) + 1;
+					}
+					else
+					{
+						Expand(middle);
+
+						keys[middle] = k;
+						pointers[middle] = p;
+
+						overwrite = { pointers + low, false };
+
+						return 0;
+					}
+				}
+			}
+
+			if (count == bin_c)
+			{
+				if (low == bin_c)
+					low--;
+				else if (low == -1)
+					low++;
+
+				return (low * link_c / bin_c) + 1;
+			}
+			else
+			{
+				Expand(low);
+
+				keys[low] = k;
+				pointers[low] = p;
+
+				overwrite = { pointers + low, false };
+
+				return 0;
+			}
+		}
+
+		template < typename F > int MultiFind(F&& f,const key_t& k, size_t depth, void* ref_pages, void* ref_page2)
+		{
+			if (!count)
+				return 0;
+
+			int low = 0;
+			int high = (int)count - 1;
+
+			while (low <= high)
+			{
+				int middle = (low + high) >> 1;
+
+				switch (keys[middle].Compare(k, ref_pages, ref_page2))
+				{
+				case -1:
+					low = middle + 1;
+					break;
+				case 1:
+					high = middle - 1;
+					break;
+				case 0:
+					if (count == bin_c)
+					{
+						//To standardize which node pathway we use we must find the lower bound of this match:
+						//
+
+						auto upper = middle;
+
+						f(pointers + middle);
+
+						while (upper < bin_c-1 && keys[upper + 1].Compare(k, ref_pages, nullptr) == 0)
+							f(pointers + ++upper);	
+
+						while (middle > 0 && keys[middle - 1].Compare(k, ref_pages, nullptr) == 0)
+							f(pointers + --middle);
+
+						return (middle * link_c / bin_c) + 1;
+					}
+					else
+					{
+						auto upper = middle;
+
+						f(pointers + middle);
+
+						while (upper < count - 1 && keys[upper + 1].Compare(k, ref_pages, nullptr) == 0)
+							f(pointers + ++upper);
+
+						while (middle > 0 && keys[middle - 1].Compare(k, ref_pages, nullptr) == 0)
+							f(pointers + --middle);
+
+						return 0;
+					}
+				}
+			}
+
+			if (count == bin_c)
+			{
+				if (low == bin_c)
+					low--;
+				else if (low == -1)
+					low++;
+
+				return (low * link_c / bin_c) + 1;
+			}
+			else
+				return 0;
+		}
+
+		int Find(const key_t& k, pointer_t** pr, size_t depth, void* ref_pages, void* ref_page2)
+		{
+			*pr = nullptr;
+
+			if (!count)
+				return 0;
+
+			int low = 0;
+			int high = (int)count - 1;
+
+			while (low <= high)
+			{
+				int middle = (low + high) >> 1;
+
+				switch (keys[middle].Compare(k, ref_pages, ref_page2))
+				{
+				case -1:
+					low = middle + 1;
+					break;
+				case 1:
+					high = middle - 1;
+					break;
+				case 0:
+					*pr = pointers + middle;
+					return 0;
+				}
+			}
+
+			if (count == bin_c)
+			{
+				if (low == bin_c)
+					low--;
+				else if (low == -1)
+					low++;
+
+				return (low * link_c / bin_c) + 1;
+			}
+			else
+				return 0;
+		}
+	};
+
 	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, size_t fuzz_c, size_t padding_c = 0 > struct _FuzzyHashNode : public _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>
 	{
 		uint8_t padding[padding_c];
@@ -576,7 +785,35 @@ public:
 			return nullptr;
 		}
 
+		template <typename F> void MultiFind(F && f, const key_t& k, void* ref_page = nullptr) const
+		{
+			node_t* current = Root();
 
+			if (!current)
+				return nullptr;
+
+			node_t* next = nullptr;
+			size_t depth = 0;
+
+			while (current)
+			{
+				int result = current->MultiFind(f, k, depth++, (void*)io, ref_page);
+
+				if (!result)
+					return;
+				else
+				{
+					result--;
+
+					next = &io->template Lookup<node_t>(current->links[result]);
+
+					if (!next)
+						return;
+					else
+						current = next;
+				}
+			}
+		}
 
 		pair<pointer_t*, bool> Insert(const key_t& k, const pointer_t& p)
 		{
