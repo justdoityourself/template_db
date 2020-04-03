@@ -165,13 +165,24 @@ namespace tdb
 			auto page = r->used / page_elements;
 			auto element = r->used % page_elements;
 
-			auto p = &(io->template Lookup<page_t>(r->pages[page]).elements[element]);
+			auto &_p = io->template Lookup<page_t>(r->pages[page]);
+			auto p = _p.elements+element;
 
 			new(p) element_t(args...);
 
 			InsertIndex<>(p->Keys(io->GetReference((uint8_t*)p)),indexes, r->used++);
 
 			return *p;
+		}
+
+		template < size_t I, typename T > element_t* FindSurrogate(T* ref)
+		{
+			auto dx = std::get<I>(indexes).Find(0, (void*)ref);
+
+			if (!dx)
+				return nullptr;
+
+			return pAt(*dx);
 		}
 
 		template < size_t I, typename K > element_t * Find(const K & k, void* ref = nullptr)
@@ -216,6 +227,10 @@ namespace tdb
 		static const size_t page_elements = _page_elements;
 		static const size_t lookup_padding = _lookup_padding;
 		static const size_t page_padding = _page_padding;
+
+		TableElementBase() {}
+
+		template < typename ... ARGS > TableElementBase(ARGS&&... args) : child_t(args...) {}
 
 		using Int = int_t;
 		using Link = link_t;

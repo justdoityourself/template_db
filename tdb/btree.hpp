@@ -500,7 +500,7 @@ namespace tdb
 			root_n = _n++;
 			io = _io;
 
-			if (io->size() < root_n)
+			if (io->size() <= root_n)
 			{
 				auto r = &io->template Allocate<node_t>();
 				r->Init();
