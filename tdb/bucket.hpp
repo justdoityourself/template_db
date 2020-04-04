@@ -169,4 +169,8 @@ namespace tdb
 	};
 
 	template < typename R, typename index_t > using Stream = _StreamBucket<R, uint64_t, uint64_t, 1024, index_t>;
+
+	//TODO FIXED BUCKET
+	//Better for random IO
+	//Is it needed? Will implement when needed.
 }

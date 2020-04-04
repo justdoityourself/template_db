@@ -455,5 +455,51 @@ namespace tdb
 
 			return pAt(*dx);
 		}
+
+		template < size_t I, typename T > element_t* FindSurrogate(T* ref)
+		{
+			return Find<I>(0, (void*)ref);
+		}
+
+		template < size_t I, typename F, typename T > void MultiFindSurrogate(F&& f, T* ref)
+		{
+			MultiFind<I>(f, 0, (void*)ref);
+		}
+
+		template < size_t I, typename F, typename K > void MultiFind(F&& f, const K& k, void* ref = nullptr)
+		{
+			std::get<I>(indexes).MultiFind([&, f = std::move(f)](auto* dx)
+			{
+				f(At(*dx));
+			}, k, ref);
+		}
 	};
+
+	template < typename R, typename element_t, typename ... index_t > using StreamingTable = _GrowingTable<R, element_t, index_t...>;
+
+	template < typename int_t, typename link_t, size_t _max_pages, size_t _lookup_padding, size_t _page_elements, size_t _page_padding, typename child_t > struct StreamTableElementBase : public child_t
+	{
+		static const size_t max_pages = _max_pages;
+		static const size_t page_elements = _page_elements;
+		static const size_t lookup_padding = _lookup_padding;
+		static const size_t page_padding = _page_padding;
+
+		StreamTableElementBase() {}
+
+		template < typename ... ARGS > StreamTableElementBase(ARGS&&... args) : child_t(args...) {}
+
+		using Int = int_t;
+		using Link = link_t;
+	};
+
+	template < size_t page_s, typename int_t, typename link_t, typename child_t >
+	using StreamTableElementBuilder = StreamTableElementBase <   int_t,
+		link_t,
+		(page_s - sizeof(int_t) * 2 - sizeof(link_t)) / sizeof(link_t),
+		(page_s - sizeof(int_t) * 2 - sizeof(link_t)) % sizeof(link_t),
+		page_s / sizeof(child_t),
+		page_s % sizeof(child_t),
+		child_t >;
+
+	template < typename child_t, size_t page_s = 64 * 1024, typename int_t = uint64_t> using SimpleStreamTableElementBuilder = StreamTableElementBuilder<page_s, int_t, int_t, child_t>;
 }
