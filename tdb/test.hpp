@@ -35,6 +35,87 @@ TEST_CASE("Network Layer", "[tdb::]")
     /*It would be fun to implement a SQL compatability layer*/
 }
 
+TEST_CASE("Multimap", "[tdb::]")
+{
+    std::filesystem::remove_all("db.dat");
+
+#pragma pack(push, 1)
+    struct Element
+    {
+        Element() {}
+
+        Element(uint64_t _id, const char* first, const char* last, const char* _address) :id(_id)
+        {
+            strncpy_s(first_name, first, 31);
+            strncpy_s(last_name, last, 31);
+            strncpy_s(address, _address, 31);
+        }
+
+        auto Keys(uint64_t n)
+        {
+            return std::make_tuple(n + 8, n + 20, n + 32);
+        }
+
+        uint64_t id = 0;
+        char first_name[12] = {};
+        char last_name[12] = {};
+        char address[32] = {};
+    };
+#pragma pack(pop)
+
+    using R = AsyncMap<>;
+    using E = SimpleTableElementBuilder <Element>;
+    using SIDX = BTree< R, MultiSurrogateStringPointer<R> >;
+
+    using Database = DatabaseBuilder < R, FixedTable<R, E, SIDX, SIDX, SIDX> >;
+
+    constexpr size_t lim = 10 * 1000;
+    enum Tables { Table, Reserved };
+    enum Indexes { FirstName, LastName, Address };
+
+    {
+        Database db("db.dat");
+        auto element_table = db.Table<Table>();
+        std::list<std::tuple<std::string, std::string, std::string>> check_work;
+
+        for (size_t i = 0; i < lim; i++)
+        {
+            check_work.emplace_back(d8u::random::Word(11), d8u::random::Word(11), d8u::random::Word(31));
+            element_table.Emplace(i, std::get<FirstName>(check_work.back()).c_str(), std::get<LastName>(check_work.back()).c_str(), std::get<Address>(check_work.back()).c_str());
+        }
+
+        size_t j = 0,fcount=0,lcount=0,acount=0;
+        for (auto& i : check_work)
+        {
+            element_table.MultiFindSurrogate< FirstName >([&](auto& element)
+                {
+                    if (element.id == j)
+                        fcount++;
+                },std::get< FirstName >(i).c_str());
+
+            element_table.MultiFindSurrogate< LastName >([&](auto& element)
+                {
+                    if (element.id == j)
+                        lcount++;
+                }, std::get< LastName >(i).c_str());
+
+            element_table.MultiFindSurrogate< Address >([&](auto& element)
+                {
+                    if (element.id == j)
+                        acount++;
+                }, std::get< Address >(i).c_str());
+
+            j++;
+        }
+
+        CHECK(lcount == j);
+        CHECK(acount == j);
+        CHECK(fcount == j);
+    }
+
+    std::filesystem::remove_all("db.dat");
+}
+
 TEST_CASE("Fixed Table", "[tdb::]")
 {
     std::filesystem::remove_all("db.dat");

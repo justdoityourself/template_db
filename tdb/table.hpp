@@ -177,12 +177,7 @@ namespace tdb
 
 		template < size_t I, typename T > element_t* FindSurrogate(T* ref)
 		{
-			auto dx = std::get<I>(indexes).Find(0, (void*)ref);
-
-			if (!dx)
-				return nullptr;
-
-			return pAt(*dx);
+			return Find<I>(0, (void*)ref);
 		}
 
 		template < size_t I, typename K > element_t * Find(const K & k, void* ref = nullptr)
@@ -193,6 +188,19 @@ namespace tdb
 				return nullptr;
 
 			return pAt(*dx);
+		}
+
+		template < size_t I, typename F, typename T > void MultiFindSurrogate(F&& f,T* ref)
+		{
+			MultiFind<I>(f, 0, (void*)ref);
+		}
+
+		template < size_t I, typename F, typename K > void MultiFind(F && f, const K& k, void* ref = nullptr)
+		{
+			std::get<I>(indexes).MultiFind( [&, f = std::move(f)] (auto* dx)
+			{
+				f(At(*dx)); 
+			} ,k, ref);
 		}
 
 		//TODO

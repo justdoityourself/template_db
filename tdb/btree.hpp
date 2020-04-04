@@ -405,10 +405,10 @@ namespace tdb
 
 						f(pointers + middle);
 
-						while (upper < bin_c-1 && keys[upper + 1].Compare(k, ref_pages, nullptr) == 0)
+						while (upper < bin_c-1 && keys[upper + 1].Compare(k, ref_pages, ref_page2) == 0)
 							f(pointers + ++upper);	
 
-						while (middle > 0 && keys[middle - 1].Compare(k, ref_pages, nullptr) == 0)
+						while (middle > 0 && keys[middle - 1].Compare(k, ref_pages, ref_page2) == 0)
 							f(pointers + --middle);
 
 						return (middle * link_c / bin_c) + 1;
@@ -419,10 +419,10 @@ namespace tdb
 
 						f(pointers + middle);
 
-						while (upper < count - 1 && keys[upper + 1].Compare(k, ref_pages, nullptr) == 0)
+						while (upper < count - 1 && keys[upper + 1].Compare(k, ref_pages, ref_page2) == 0)
 							f(pointers + ++upper);
 
-						while (middle > 0 && keys[middle - 1].Compare(k, ref_pages, nullptr) == 0)
+						while (middle > 0 && keys[middle - 1].Compare(k, ref_pages, ref_page2) == 0)
 							f(pointers + --middle);
 
 						return 0;
@@ -790,7 +790,7 @@ public:
 			node_t* current = Root();
 
 			if (!current)
-				return nullptr;
+				return;
 
 			node_t* next = nullptr;
 			size_t depth = 0;
@@ -979,6 +979,21 @@ public:
 
 
 	template <size_t page_s, typename int_t, typename key_t, size_t link_c = 4> using SimpleOrderedListBuilder = OrderedListBuilder<page_s, int_t, key_t, int_t, int_t, link_c>;
+
+
+
+	template <size_t page_s, typename int_t, typename key_t, typename pointer_t, typename link_t, size_t link_c>
+	using MultiListBuilder = _OrderedMultiListNode<	int_t,
+													key_t,
+													pointer_t,
+													link_t,
+													(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) / (sizeof(key_t) + sizeof(pointer_t)),
+													link_c,
+													(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) % (sizeof(key_t) + sizeof(pointer_t)) >;
+
+
+	template <size_t page_s, typename int_t, typename key_t, size_t link_c = 4> using SimpleMultiListBuilder = MultiListBuilder<page_s, int_t, key_t, int_t, int_t, link_c>;
+
 
 
 	template <size_t page_s, typename int_t, typename key_t, typename pointer_t, typename link_t, size_t link_c, size_t fuzzy_c>

@@ -11,7 +11,7 @@ namespace tdb
 
 		Nodes must match the allocation unit of the recycler, as this is the minimum addressable unit.
 
-		This is done by carefully with key/value counts, pointer counts and padding. UPDATE USE BUILDERS!
+		This is done by carefully with key/value counts, pointer counts and padding. UPDATED, USE BUILDERS!
 
 		Use a static assert to check your work please.
 
@@ -27,6 +27,7 @@ namespace tdb
 	//Pointer nodes, map a key to an object:
 	//
 
+	template <typename R>	using MultiSurrogateStringPointer =		SimpleMultiListBuilder<64 * 1024, uint64_t, _OrderedSurrogateString<R, uint64_t> >;
 	template <typename R>	using OrderedSurrogateStringPointer =	SimpleOrderedListBuilder<64 * 1024, uint64_t, _OrderedSurrogateString<R, uint64_t> >;
 	template <typename R>	using SurrogateKeyPointer =				SimpleOrderedListBuilder<64 * 1024, uint64_t, _SurrogateKey<R, uint64_t, Key32> >;
 							using OrderedListPointer =				SimpleOrderedListBuilder<64 * 1024, uint64_t, Key32 >;
