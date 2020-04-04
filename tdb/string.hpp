@@ -15,7 +15,11 @@ namespace tdb
 {
 	using namespace std;
 
-	template < typename R, typename int_t, typename bucket_t > class _StringBucket
+	/*
+		One to many lookup, string to pointer.
+	*/
+
+	template < typename R, typename int_t, size_t lim_c, typename bucket_t > class _StringSearch
 	{
 		bucket_t bucket;
 
@@ -23,7 +27,7 @@ namespace tdb
 
 	public:
 
-		_StringBucket() {}
+		_StringSearch() {}
 
 		void Validate() {} //TODO
 
@@ -36,25 +40,26 @@ namespace tdb
 
 		template <typename V> void Insert(std::string_view k, const V& v)
 		{
-			if (k.size() < sizeof(int_t))
+			if (k.size() < lim_c)
 			{
 				int_t kk = 0;
 
 				std::memcpy(&kk, k.data(), k.size());
-				bucket.write(*pc, v);
+				bucket.Write(kk, v);
 			}
 			else
 			{
-				std::set<int_t> inserted;
+				std::set<typename int_t::Key> inserted;
 
-				for (size_t i = 0; i < k.size() - sizeof(int_t) + 1; i++)
+				for (size_t i = 0; i < k.size() - lim_c + 1; i++)
 				{
-					auto pc = (int_t*)(k.data() + i);
+					int_t kk = 0;
+					std::memcpy(&kk, k.data()+i, lim_c);
 
-					if (inserted.find(*pc) == inserted.end())
+					if (inserted.find(kk.key) == inserted.end())
 					{
-						inserted.insert(*pc);
-						bucket.write(*pc, v);
+						inserted.insert(kk.key);
+						bucket.Write(kk, v);
 					}
 				}
 			}
@@ -68,15 +73,19 @@ namespace tdb
 
 		template <typename V> auto Find(std::string_view k)
 		{
-			std::vector<V> result;
+			std::set<V> _result;
 
 			auto on_result = [&](auto seg)
 			{
 				auto buf = d8u::t_buffer<V>(seg);
-				result.insert(result.end(), buf.begin(), buf.end());
+
+				for (auto& e : buf)
+					_result.insert(e);
+
+				return true;
 			};
 
-			if (k.size() < sizeof(int_t))
+			if (k.size() < lim_c)
 			{
 				int_t kk = 0;
 
@@ -85,19 +94,23 @@ namespace tdb
 			}
 			else
 			{
-				std::set<int_t> found;
+				std::set<typename int_t::Key> found;
 
-				for (size_t i = 0; i < k.size() - sizeof(int_t) + 1; i++)
+				for (size_t i = 0; i < k.size() - lim_c + 1; i++)
 				{
-					auto pc = (int_t*)(k.data() + i);
+					int_t kk = 0;
+					std::memcpy(&kk, k.data()+i, lim_c);
 
-					if (found.find(*pc) == found.end())
+					if (found.find(kk.key) == found.end())
 					{
-						found.insert(*pc);
-						bucket.Stream(*pc, on_result);
+						found.insert(kk.key);
+						bucket.Stream(kk, on_result);
 					}
 				}
 			}
+
+			std::vector<V> result(_result.size());
+			std::copy(_result.begin(), _result.end(), result.begin());
 
 			return result;
 		}
@@ -109,5 +122,5 @@ namespace tdb
 		}
 	};
 
-	template <typename R> using StringBucket = _StringBucket<R, uint32_t, _StreamBucket<R, uint64_t, uint64_t, 1024, BTree< R, SimpleOrderedListBuilder<64 * 1024, uint64_t, uint32_t > > > >;
+	template <typename R> using StringSearch = _StringSearch<R, _IntWrapper<uint32_t>, 3, _StreamBucket<R, uint64_t, uint64_t, 1024, BTree< R, SimpleOrderedListBuilder<64 * 1024, uint64_t, _IntWrapper<uint32_t> > > > >;
 }

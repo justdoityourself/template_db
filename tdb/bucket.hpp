@@ -47,6 +47,11 @@ namespace tdb
 			return Write(k, v);
 		}
 
+		template <typename T, typename V> auto WriteT(const T& k, const V& v)
+		{
+			return Write(k,gsl::span<uint8_t>((uint8_t*)&v,sizeof(V)));
+		}
+
 		template <typename T, typename V> auto Write(const T & k, const V & v)
 		{
 			if (!v.size()) return std::make_pair((link_t*)nullptr,false);

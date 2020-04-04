@@ -11,6 +11,7 @@
 #include "btree.hpp"
 #include "pages.hpp"
 #include "table.hpp"
+#include "string.hpp"
 
 #include "d8u/random.hpp"
 #include "d8u/buffer.hpp"
@@ -33,6 +34,36 @@ TEST_CASE("Network Layer", "[tdb::]")
     /*There is a deeper question holding up the show here, it is that of protocol and format*/
 
     /*It would be fun to implement a SQL compatability layer*/
+}
+
+TEST_CASE("String Bucket Simple", "[tdb::]")
+{
+    std::filesystem::remove_all("db.dat");
+
+    using R = AsyncMap<>;
+
+    using Database = DatabaseBuilder < R, StringSearch<R> >;
+
+    enum Tables { Lookup };
+
+    {
+        Database db("db.dat");
+        auto search = db.Table<Lookup>();
+
+        size_t v = 0;
+        search.Insert("this is a string", gsl::span<uint8_t>((uint8_t*)&v,sizeof(size_t)));
+        v++;
+
+        search.Insert("different string this this", gsl::span<uint8_t>((uint8_t*)&v, sizeof(size_t)));
+        v++;
+
+        CHECK(search.Find<size_t>("this").size() == 2);
+        CHECK(search.Find<size_t>("string").size() == 2);
+        CHECK(search.Find<size_t>("different").size() == 1);
+        CHECK(search.Find<size_t>(" is").size() == 1);
+    }
+
+    std::filesystem::remove_all("db.dat");
 }
 
 TEST_CASE("Endless Table", "[tdb::]")

@@ -613,19 +613,41 @@ namespace tdb
 		}
 	};
 
+	template <typename int_t> struct _IntWrapper
+	{
+		_IntWrapper() {}
+		_IntWrapper(int_t t): key(t){}
+
+		using Key = int_t;
+		int_t key = 0;
+
+		int Compare(const _IntWrapper& rs, void* _ref_page, void * direct_page)
+		{
+			//NO SURROGATE INTS! todo surrogate bigint wrapper
+
+			if (key > rs.key)
+				return 1;
+			if (key < rs.key)
+				return -1;
+			return 0;
+		}
+
+		//No int wrapper hashmaps ( equals function )
+	};
+
 	template <typename R, typename int_t> struct _OrderedSurrogateString
 	{
 		_OrderedSurrogateString() {}
-		_OrderedSurrogateString(int_t t): sz_offset(t){}
+		_OrderedSurrogateString(int_t t) : sz_offset(t) {}
 
 		int_t sz_offset = 0;
 
-		int Compare(const _OrderedSurrogateString& rs, void* _ref_page, void * direct_page)
+		int Compare(const _OrderedSurrogateString& rs, void* _ref_page, void* direct_page)
 		{
 			auto ref_page = (R*)_ref_page;
 
-			auto l = (const char*) ref_page->GetObject(sz_offset);
-			auto r = (const char*) ((!rs.sz_offset) ? (uint8_t*)direct_page : ref_page->GetObject(rs.sz_offset));
+			auto l = (const char*)ref_page->GetObject(sz_offset);
+			auto r = (const char*)((!rs.sz_offset) ? (uint8_t*)direct_page : ref_page->GetObject(rs.sz_offset));
 
 			return strcmp(l, r);
 		}
