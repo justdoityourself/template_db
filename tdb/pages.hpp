@@ -27,11 +27,11 @@ namespace tdb
 	//Pointer nodes, map a key to an object:
 	//
 
-	template <typename R>	using MultiSurrogateStringPointer =		SimpleMultiListBuilder<64 * 1024, uint64_t, _OrderedSurrogateString<R, uint64_t> >;
-	template <typename R>	using OrderedSurrogateStringPointer =	SimpleOrderedListBuilder<64 * 1024, uint64_t, _OrderedSurrogateString<R, uint64_t> >;
-	template <typename R>	using SurrogateKeyPointer =				SimpleOrderedListBuilder<64 * 1024, uint64_t, _SurrogateKey<R, uint64_t, Key32> >;
-							using OrderedListPointer =				SimpleOrderedListBuilder<64 * 1024, uint64_t, Key32 >;
-
+	template <typename int_t> 	using OrderedSegmentPointer =			SimpleMultiListBuilder<64 * 1024, uint64_t, _Segment<int_t> >;
+	template <typename R>		using MultiSurrogateStringPointer =		SimpleMultiListBuilder<64 * 1024, uint64_t, _OrderedSurrogateString<R, uint64_t> >;
+	template <typename R>		using OrderedSurrogateStringPointer =	SimpleOrderedListBuilder<64 * 1024, uint64_t, _OrderedSurrogateString<R, uint64_t> >;
+	template <typename R>		using SurrogateKeyPointer =				SimpleOrderedListBuilder<64 * 1024, uint64_t, _SurrogateKey<R, uint64_t, Key32> >;
+								using OrderedListPointer =				SimpleOrderedListBuilder<64 * 1024, uint64_t, Key32 >;
 
 
 	template <size_t fuzzy_c> using FuzzyHashPointerT =		SimpleFuzzyHashBuilder<64 * 1024 , uint64_t, Key32, fuzzy_c>;

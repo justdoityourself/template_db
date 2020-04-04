@@ -36,6 +36,35 @@ TEST_CASE("Network Layer", "[tdb::]")
     /*It would be fun to implement a SQL compatability layer*/
 }
 
+TEST_CASE("Segment Simple", "[tdb::]")
+{
+    std::filesystem::remove_all("db.dat");
+
+    using R = AsyncMap<>;
+
+    using SEGLK = BTree< R, OrderedSegmentPointer<uint64_t> >;
+    using Database = DatabaseBuilder < R, SEGLK >;
+    using Segment = std::pair<uint64_t, uint64_t>;
+
+    enum Tables { Segments };
+
+    {
+        Database db("db.dat");
+        auto segments = db.Table<Segments>();
+
+        segments.Insert(Segment(15,5), uint64_t(1));
+
+        CHECK(*segments.Find(15) == 1);
+        CHECK(*segments.Find(Segment(14,2)) == 1);
+        CHECK(!segments.Find(14));
+        CHECK(*segments.Find(19) == 1);
+        CHECK(*segments.Find(Segment(18, 2)) == 1);
+        CHECK(!segments.Find(20));
+    }
+
+    std::filesystem::remove_all("db.dat");
+}
+
 TEST_CASE("String Bucket Simple", "[tdb::]")
 {
     std::filesystem::remove_all("db.dat");

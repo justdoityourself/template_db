@@ -635,6 +635,25 @@ namespace tdb
 		//No int wrapper hashmaps ( equals function )
 	};
 
+	template <typename int_t> struct _Segment
+	{
+		_Segment() {}
+		_Segment(const std::pair<int_t, int_t>& p) : start(p.first), length(p.second) {}
+		_Segment(int_t o, int_t l=1) : start(o), length(l) {}
+
+		int_t start = 0;
+		int_t length = 0;
+
+		int Compare(const _Segment& rs, void* _ref_page, void* direct_page)
+		{
+			if (start >= rs.start + rs.length)
+				return 1;
+			if (start + length <= rs.start)
+				return -1;
+			return 0;
+		}
+	};
+
 	template <typename R, typename int_t> struct _OrderedSurrogateString
 	{
 		_OrderedSurrogateString() {}
