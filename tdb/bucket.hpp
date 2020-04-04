@@ -42,9 +42,14 @@ namespace tdb
 			index.Open(io, _n);
 		}
 
-		template <typename T, typename V> void Write(const T & k, const V & v)
+		template <typename T, typename V> void Insert(const T& k, const V& v)
 		{
-			if (!v.size()) return;
+			return Write(k, v);
+		}
+
+		template <typename T, typename V> auto Write(const T & k, const V & v)
+		{
+			if (!v.size()) return std::make_pair((link_t*)nullptr,false);
 
 			auto [ptr, overwrite] = index.Insert(k,link_t(0));
 
@@ -69,7 +74,7 @@ namespace tdb
 				std::copy(v.begin(), v.end(), bin);
 
 				*ptr = offset;
-				return;
+				return std::make_pair(ptr, false);
 			}
 
 			auto _header = io->GetObject(*ptr);
@@ -116,6 +121,8 @@ namespace tdb
 			}
 
 			ph->total += v.size();
+
+			return std::make_pair(ptr, true);
 		}
 
 		template < typename K > std::vector<uint8_t> Read(const K& k)
