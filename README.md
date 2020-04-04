@@ -50,4 +50,56 @@ enum Tables { Segments };
     assert(!segments.Find(20));
 }
 
+//...
+
+struct Element
+{
+    Element() {}
+
+    Element(uint64_t _id, const char* first, const char* last, const char* _address) :id(_id)
+    {
+        strncpy_s(first_name, first, 31);
+        strncpy_s(last_name, last, 31);
+        strncpy_s(address, _address, 31);
+    }
+
+    auto Keys(uint64_t n)
+    {
+        return std::make_tuple(n + 8, n + 20, n + 32);
+    }
+
+    uint64_t id = 0;
+    char first_name[12] = {};
+    char last_name[12] = {};
+    char address[32] = {};
+};
+
+using E = SimpleTableElementBuilder <Element>;
+using SIDX = BTree< R, MultiSurrogateStringPointer<R> >;
+
+using Database = DatabaseBuilder < R, FixedTable<R, E, SIDX, SIDX, SIDX> >;
+
+enum Tables { Table };
+enum Indexes { FirstName, LastName, Address };
+
+{
+    Database db("db.dat");
+    auto element_table = db.Table<Table>();
+        
+    element_table.Emplace(0, "John", "Doe", "777 Brook Way");
+    element_table.Emplace(1, "Joe", "Dohn", "666 Other Way");
+    element_table.Emplace(2, "Little", "Timmy", "69420 Pog Champ");
+    element_table.Emplace(3, "John", "Again", "5497 W 123 E");
+
+    element_table.MultiFindSurrogate< FirstName >([&](auto& element)
+    {
+        assert (element.id == 0 || element.id == 3);
+    },"John");
+
+    element_table.MultiFindSurrogate< LastName >([&](auto& element)
+    {
+        assert(element.id == 2);
+    }, "Timmy");
+}
+
 ```
