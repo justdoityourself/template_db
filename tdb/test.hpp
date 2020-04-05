@@ -6,12 +6,7 @@
 
 #include <filesystem>
 
-#include "builder.hpp"
-#include "bucket.hpp"
-#include "btree.hpp"
-#include "pages.hpp"
-#include "table.hpp"
-#include "string.hpp"
+#include "tdb.hpp"
 
 #include "d8u/random.hpp"
 #include "d8u/buffer.hpp"

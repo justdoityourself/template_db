@@ -309,6 +309,7 @@
     <ClInclude Include="tdb\hash.hpp" />
     <ClInclude Include="tdb\host.hpp" />
     <ClInclude Include="tdb\interface.hpp" />
+    <ClInclude Include="tdb\json.hpp" />
     <ClInclude Include="tdb\keys.hpp" />
     <ClInclude Include="tdb\legacy.hpp" />
     <ClInclude Include="tdb\mapping.hpp" />
@@ -317,6 +318,7 @@
     <ClInclude Include="tdb\recycling.hpp" />
     <ClInclude Include="tdb\string.hpp" />
     <ClInclude Include="tdb\table.hpp" />
+    <ClInclude Include="tdb\tdb.hpp" />
     <ClInclude Include="tdb\test.hpp" />
     <ClInclude Include="tdb\test_legacy.hpp" />
   </ItemGroup>

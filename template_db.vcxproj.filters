@@ -78,6 +78,12 @@
     <ClInclude Include="tdb\string.hpp">
       <Filter>tdb</Filter>
     </ClInclude>
+    <ClInclude Include="tdb\json.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
+    <ClInclude Include="tdb\tdb.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="tdb.cpp">
