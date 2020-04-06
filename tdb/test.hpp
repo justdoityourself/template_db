@@ -31,6 +31,100 @@ TEST_CASE("Network Layer", "[tdb::]")
     /*It would be fun to implement a SQL compatability layer*/
 }
 
+TEST_CASE("Surrogate Table", "[tdb::]")
+{
+    std::filesystem::remove_all("db.dat");
+
+#pragma pack(push, 1)
+    struct Element
+    {
+        Element() {}
+
+        static size_t Size(uint64_t _id, const char* first, const char* last, const char* _address)
+        {
+            return sizeof(Element) + strlen(first) +1 + strlen(last) + 1 + strlen(_address) + 1;
+        }
+
+        Element(uint64_t _id, const char* first, const char* _last, const char* _address) :id(_id)
+        {
+            size_t l1 = strlen(first) + 1;
+            std::copy(first, first + l1, (char*)(this + 1));
+            last = (uint16_t)(sizeof(Element) + l1);
+
+            size_t l2 = strlen(_last) + 1;
+            std::copy(_last, _last + l2, ((char*)(this))+last);
+            address = (uint16_t)(sizeof(Element) + l1 + l2);
+
+            size_t l3 = strlen(_address) + 1;
+            std::copy(_address, _address + l3, ((char*)(this)) + address);
+        }
+
+        auto Keys(uint64_t n)
+        {
+            return std::make_tuple(n + sizeof(Element), n + last, n + address);
+        }
+
+        uint64_t id = 0;
+        
+        //[Offsets]
+        uint16_t last;
+        uint16_t address;
+    };
+#pragma pack(pop)
+
+    using R = AsyncMap<>;
+    using E = SimpleSurrogateTableBuilder <Element>;
+    using SIDX = BTree< R, MultiSurrogateStringPointer<R> >;
+
+    using Database = DatabaseBuilder < R, SurrogateTable<R, E, SIDX, SIDX, SIDX> >;
+
+    constexpr size_t lim = 10 * 1000;
+    enum Tables { Table, Reserved };
+    enum Indexes { FirstName, LastName, Address };
+
+    {
+        Database db("db.dat");
+        auto element_table = db.Table<Table>();
+        std::list<std::tuple<std::string, std::string, std::string>> check_work;
+
+        for (size_t i = 0; i < lim; i++)
+        {
+            check_work.emplace_back(d8u::random::Word(11), d8u::random::Word(11), d8u::random::Word(31));
+            element_table.Emplace(i, std::get<FirstName>(check_work.back()).c_str(), std::get<LastName>(check_work.back()).c_str(), std::get<Address>(check_work.back()).c_str());
+        }
+
+        size_t j = 0, fcount = 0, lcount = 0, acount = 0;
+        for (auto& i : check_work)
+        {
+            element_table.MultiFindSurrogate< FirstName >([&](auto& element)
+                {
+                    if (element.id == j)
+                        fcount++;
+                }, std::get< FirstName >(i).c_str());
+
+            element_table.MultiFindSurrogate< LastName >([&](auto& element)
+                {
+                    if (element.id == j)
+                        lcount++;
+                }, std::get< LastName >(i).c_str());
+
+            element_table.MultiFindSurrogate< Address >([&](auto& element)
+                {
+                    if (element.id == j)
+                        acount++;
+                }, std::get< Address >(i).c_str());
+
+            j++;
+        }
+
+        CHECK(lcount == j);
+        CHECK(acount == j);
+        CHECK(fcount == j);
+    }
+
+    std::filesystem::remove_all("db.dat");
+}
+
 TEST_CASE("Segment Simple", "[tdb::]")
 {
     std::filesystem::remove_all("db.dat");

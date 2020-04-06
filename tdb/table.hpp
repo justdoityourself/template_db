@@ -477,23 +477,8 @@ namespace tdb
 
 	template < typename R, typename element_t, typename ... index_t > using StreamingTable = _GrowingTable<R, element_t, index_t...>;
 
-	template < typename int_t, typename link_t, size_t _max_pages, size_t _lookup_padding, size_t _page_elements, size_t _page_padding, typename child_t > struct StreamTableElementBase : public child_t
-	{
-		static const size_t max_pages = _max_pages;
-		static const size_t page_elements = _page_elements;
-		static const size_t lookup_padding = _lookup_padding;
-		static const size_t page_padding = _page_padding;
-
-		StreamTableElementBase() {}
-
-		template < typename ... ARGS > StreamTableElementBase(ARGS&&... args) : child_t(args...) {}
-
-		using Int = int_t;
-		using Link = link_t;
-	};
-
 	template < size_t page_s, typename int_t, typename link_t, typename child_t >
-	using StreamTableElementBuilder = StreamTableElementBase <   int_t,
+	using StreamTableElementBuilder = TableElementBase <   int_t,
 		link_t,
 		(page_s - sizeof(int_t) * 2 - sizeof(link_t)) / sizeof(link_t),
 		(page_s - sizeof(int_t) * 2 - sizeof(link_t)) % sizeof(link_t),
@@ -502,4 +487,216 @@ namespace tdb
 		child_t >;
 
 	template < typename child_t, size_t page_s = 64 * 1024, typename int_t = uint64_t> using SimpleStreamTableElementBuilder = StreamTableElementBuilder<page_s, int_t, int_t, child_t>;
+
+
+
+	template < typename R, typename element_t, typename ... index_t > class _SurrogateTable
+	{
+		using link_t = typename element_t::Link;
+		using int_t = typename element_t::Int;
+		static const size_t max_pages = element_t::max_pages;
+		static const size_t page_elements = element_t::page_elements;
+		static const size_t lookup_padding = element_t::lookup_padding;
+		static const size_t page_padding = element_t::page_padding;
+
+		std::tuple<index_t...> indexes;
+
+		template < typename T > void InstallIndex(T& t, size_t& n)
+		{
+			t.Open(io, n);
+		}
+
+		template<size_t I = 0, typename... Tkey, typename... Tidx> void InsertIndex(const std::tuple<Tkey...>& ks, std::tuple<Tidx...>& dx, link_t v)
+		{
+			std::get<I>(dx).Insert(std::get<I>(ks), v);
+
+			if constexpr (I + 1 != sizeof...(Tidx))
+				InsertIndex<I + 1>(ks, dx, v);
+		}
+
+		template<size_t I = 0, typename... Tkey, typename... Tidx> void InsertIndexLock(const std::tuple<Tkey...>& ks, std::tuple<Tidx...>& dx, link_t v)
+		{
+			std::get<I>(dx).InsertLock(std::get<I>(ks), v);
+
+			if constexpr (I + 1 != sizeof...(Tidx))
+				InsertIndexLock<I + 1>(ks, dx);
+		}
+
+		void _Open(size_t& n)
+		{
+			std::apply([&](auto& ...x) { (InstallIndex(x, n), ...); }, indexes);
+		}
+
+		R* io = nullptr;
+		link_t root_n;
+
+#pragma pack(push,1)
+
+		struct lookup_t
+		{
+			lookup_t() {}
+
+			link_t pages[max_pages] = {};
+
+			int_t used = 0;
+			int_t capacity = 0;
+
+			uint8_t padding[lookup_padding];
+		};
+
+		static_assert(sizeof(lookup_t) == R::UnitSize);
+
+		struct page_t
+		{
+			page_t() {}
+
+			link_t elements[page_elements];
+
+			uint8_t padding[page_padding];
+		};
+
+		static_assert(sizeof(page_t) == R::UnitSize);
+
+#pragma pack(pop)
+
+		auto Root() const
+		{
+			return &io->template Lookup<lookup_t>(root_n);
+		}
+
+	public:
+
+		_SurrogateTable() {}
+
+		void Validate() {} //TODO
+
+		void Open(R* _io, size_t& _n)
+		{
+			root_n = _n++;
+			io = _io;
+
+			if (io->size() <= root_n)
+				io->template Allocate<lookup_t>();
+
+			_Open(_n);
+		}
+
+		size_t size() { return (size_t)Root()->used; }
+
+		void resize(size_t count)
+		{
+			if (count > max_pages * page_elements)
+				throw std::runtime_error("Out of bounds");
+
+			auto r = Root();
+
+			if (count < r->capacity)
+				return;
+
+			auto start_page = r->capacity / page_elements;
+			auto target_page = count / page_elements + 1;
+
+			r->capacity = target_page * page_elements;
+
+			for (size_t i = start_page; i < target_page; i++)
+				r->pages[i] = io->template Index<page_t>(io->template Allocate<page_t>());
+		}
+
+		element_t& At(size_t index)
+		{
+			if (index > size())
+				throw std::runtime_error("Out of bounds");
+
+			auto page = index / page_elements;
+			auto element = index % page_elements;
+
+			return *((element_t*)io->GetObject(io->template Lookup<page_t>(Root()->pages[page]).elements[element]));
+		}
+
+		element_t* pAt(size_t index)
+		{
+			if (index > size())
+				return nullptr;
+
+			auto page = index / page_elements;
+			auto element = index % page_elements;
+
+			return (element_t*)GetObject(io->template Lookup<page_t>(Root()->pages[page]).elements[element]);
+		}
+
+		element_t& operator[](size_t index)
+		{
+			return At(index);
+		}
+
+		template<size_t DX> auto& Index()
+		{
+			return std::get<DX>(indexes);
+		}
+
+		template <typename ... t_args> element_t& Emplace(t_args ... args)
+		{
+			auto r = Root();
+
+			if (r->used >= r->capacity)
+				resize(r->used + 1);
+
+			auto page = r->used / page_elements;
+			auto element = r->used % page_elements;
+
+			auto& _p = io->template Lookup<page_t>(r->pages[page]);
+			auto l = _p.elements + element;
+
+			auto size = element_t::Size(args...);
+			auto [p, off] = io->Incidental(size);
+			*l = (link_t)off;
+
+			auto t = new(p) element_t(args...);
+
+			InsertIndex<>(t->Keys(off), indexes, r->used++);
+
+			return *t;
+		}
+
+		template < size_t I, typename T > element_t* FindSurrogate(T* ref)
+		{
+			return Find<I>(0, (void*)ref);
+		}
+
+		template < size_t I, typename K > element_t* Find(const K& k, void* ref = nullptr)
+		{
+			auto dx = std::get<I>(indexes).Find(k, ref);
+
+			if (!dx)
+				return nullptr;
+
+			return pAt(*dx);
+		}
+
+		template < size_t I, typename F, typename T > void MultiFindSurrogate(F&& f, T* ref)
+		{
+			MultiFind<I>(f, 0, (void*)ref);
+		}
+
+		template < size_t I, typename F, typename K > void MultiFind(F&& f, const K& k, void* ref = nullptr)
+		{
+			std::get<I>(indexes).MultiFind([&, f = std::move(f)](auto* dx)
+			{
+				f(At(*dx));
+			}, k, ref);
+		}
+	};
+
+	template < typename R, typename element_t, typename ... index_t > using SurrogateTable = _SurrogateTable<R, element_t, index_t...>;
+
+	template < size_t page_s, typename int_t, typename link_t, typename child_t >
+	using SurrogateTableBuilder = TableElementBase<   int_t,
+		link_t,
+		(page_s - sizeof(int_t) * 2) / sizeof(link_t),
+		(page_s - sizeof(int_t) * 2) % sizeof(link_t),
+		page_s / sizeof(link_t),
+		page_s % sizeof(link_t),
+		child_t >;
+
+	template < typename child_t, size_t page_s = 64 * 1024, typename int_t = uint64_t> using SimpleSurrogateTableBuilder = SurrogateTableBuilder<page_s, int_t, int_t, child_t>;
 }
