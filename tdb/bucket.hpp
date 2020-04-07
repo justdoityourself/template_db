@@ -8,6 +8,7 @@ namespace tdb
 
 	template < typename R, typename link_t, typename int_t, size_t min_alloc, typename index_t > class _StreamBucket
 	{
+		static constexpr auto lock_delay = std::chrono::milliseconds(5);
 		index_t index;
 
 		R* io = nullptr;
@@ -20,6 +21,34 @@ namespace tdb
 
 		struct header
 		{
+			void Lock()
+			{
+				auto lock = (std::atomic<int_t>*) & lock;
+
+				int_t expected = 0;
+				while (!lock->compare_exchange_strong(expected, (int_t)-1))
+				{
+					expected = 0;
+					std::this_thread::sleep_for(lock_delay);
+				}
+			}
+
+			void Wait()
+			{
+				auto lock = (std::atomic<int_t>*) & lock;
+
+				while (lock->load() == (int_t)-1)
+					std::this_thread::sleep_for(lock_delay);
+			}
+
+			void Unlock()
+			{
+				auto lock = (std::atomic<int_t>*) & int_t;
+
+				lock->store((int_t)0);
+			}
+
+			int_t lock = 0;
 			int_t total = 0;
 			link_t last = 0;
 		};
@@ -44,26 +73,46 @@ namespace tdb
 
 		template <typename T, typename V> void Insert(const T& k, const V& v)
 		{
-			return Write(k, v);
+			return Write<false>(k, v);
 		}
 
 		template <typename T, typename V> auto Write(const T& k, const V& v)
 		{
-			return _Write(k, gsl::span<uint8_t>((uint8_t*)&v, sizeof(V)), std::is_integral<V>());
+			return _Write<false>(k, gsl::span<uint8_t>((uint8_t*)&v, sizeof(V)), std::is_integral<V>());
 		}
 
 		template <typename T, typename V> auto _Write(const T& k, const V& v, std::true_type)
 		{
-			return _Write(k,gsl::span<uint8_t>((uint8_t*)&v,sizeof(V)),std::bool_constant<false>());
+			return _Write<false>(k,gsl::span<uint8_t>((uint8_t*)&v,sizeof(V)),std::bool_constant<false>());
 		}
 
-		template <typename T, typename V> auto _Write(const T & k, const V & v, std::false_type)
+		template <typename T, typename V> void InsertLock(const T& k, const V& v)
+		{
+			return Write<true>(k, v);
+		}
+
+		template <typename T, typename V> auto WriteLock(const T& k, const V& v)
+		{
+			return _Write<true>(k, gsl::span<uint8_t>((uint8_t*)&v, sizeof(V)), std::is_integral<V>());
+		}
+
+		template <typename T, typename V> auto _WriteLock(const T& k, const V& v, std::true_type)
+		{
+			return _Write<true>(k, gsl::span<uint8_t>((uint8_t*)&v, sizeof(V)), std::bool_constant<false>());
+		}
+
+		template <bool lock_v, typename T, typename V> auto _Write(const T & k, const V & v, std::false_type)
 		{
 			if (!v.size()) return std::make_pair((link_t*)nullptr,false);
 
-			auto [ptr, overwrite] = index.Insert(k,link_t(0));
+			link_t* ptr; bool overwrite;
 
-			if (!overwrite)
+			if constexpr(lock_v)
+				std::tie(ptr, overwrite) = index.InsertLock(k, link_t(0));
+			else
+				std::tie(ptr, overwrite) = index.Insert(k,link_t(0));
+
+			if (!overwrite) //The overwrite indicator is atomic
 			{
 				size_t size = v.size();
 
@@ -87,9 +136,20 @@ namespace tdb
 				return std::make_pair(ptr, false);
 			}
 
+			if constexpr (lock_v)
+			{
+				//we must wait until the block has been allocated by the inserter thread, the line above ... *ptr = offset ...
+				while(!*ptr)
+					std::this_thread::sleep_for(lock_delay);
+			}
+
 			auto _header = io->GetObject(*ptr);
 
 			auto ph = (header*)_header;
+
+			if constexpr (lock_v)
+				ph->Lock();
+
 			auto lh = (link*)((ph->last) ? io->GetObject(ph->last) : (_header + sizeof(header)));
 
 			size_t rem = v.size(), off = 0;
@@ -131,6 +191,9 @@ namespace tdb
 			}
 
 			ph->total += v.size();
+
+			if constexpr (lock_v)
+				ph->Unlock();
 
 			return std::make_pair(ptr, true);
 		}

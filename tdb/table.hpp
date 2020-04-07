@@ -656,7 +656,7 @@ namespace tdb
 			return *t;
 		}
 
-		template <typename ... t_args> element_t& EmplaceAt(size_t index, t_args ... args)
+		template <bool lock_v, typename ... t_args> element_t& _EmplaceAt(size_t index, t_args ... args)
 		{
 			auto r = Root();
 
@@ -675,9 +675,22 @@ namespace tdb
 
 			auto t = new(p) element_t(args...);
 
-			InsertIndex<>(t->Keys(off), indexes, index);
+			if constexpr (lock_v)
+				InsertIndexLock<>(t->Keys(off), indexes, index);
+			else
+				InsertIndex<>(t->Keys(off), indexes, index);
 
 			return *t;
+		}
+
+		template <typename ... t_args> element_t& EmplaceAt(size_t index, t_args ... args)
+		{
+			return _EmplaceAt<false>(index, args...);
+		}
+
+		template <typename ... t_args> element_t& EmplaceAtLock(size_t index, t_args ... args)
+		{
+			return _EmplaceAt<true>(index, args...);
 		}
 
 		template < size_t I, typename T > element_t* FindSurrogate(T* ref)

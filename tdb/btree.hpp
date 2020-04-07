@@ -945,6 +945,12 @@ public:
 			return nullptr;
 		}
 
+		void InsertLock(const gsl::span<key_t>& ks, const pointer_t& p)
+		{
+			for (auto& k : ks)
+				InsertLock(k, p);
+		}
+
 		pair<pointer_t*, bool> InsertLock(const key_t& k, const pointer_t& p)
 		{
 			node_t* current = Root();
