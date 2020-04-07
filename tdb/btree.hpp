@@ -8,6 +8,8 @@
 #include <thread>
 #include <chrono>
 
+#include "../gsl-lite.hpp"
+
 #include "keys.hpp"
 
 namespace tdb
@@ -854,6 +856,12 @@ public:
 						current = next;
 				}
 			}
+		}
+
+		void Insert(const gsl::span<key_t> & ks, const pointer_t &p)
+		{
+			for(auto & k: ks)
+				Insert(k,p);
 		}
 
 		pair<pointer_t*, bool> Insert(const key_t& k, const pointer_t& p)

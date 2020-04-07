@@ -47,12 +47,17 @@ namespace tdb
 			return Write(k, v);
 		}
 
-		template <typename T, typename V> auto WriteT(const T& k, const V& v)
+		template <typename T, typename V> auto Write(const T& k, const V& v)
 		{
-			return Write(k,gsl::span<uint8_t>((uint8_t*)&v,sizeof(V)));
+			return _Write(k, gsl::span<uint8_t>((uint8_t*)&v, sizeof(V)), std::is_integral<V>());
 		}
 
-		template <typename T, typename V> auto Write(const T & k, const V & v)
+		template <typename T, typename V> auto _Write(const T& k, const V& v, std::true_type)
+		{
+			return _Write(k,gsl::span<uint8_t>((uint8_t*)&v,sizeof(V)),std::bool_constant<false>());
+		}
+
+		template <typename T, typename V> auto _Write(const T & k, const V & v, std::false_type)
 		{
 			if (!v.size()) return std::make_pair((link_t*)nullptr,false);
 

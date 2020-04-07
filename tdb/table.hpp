@@ -488,8 +488,6 @@ namespace tdb
 
 	template < typename child_t, size_t page_s = 64 * 1024, typename int_t = uint64_t> using SimpleStreamTableElementBuilder = StreamTableElementBuilder<page_s, int_t, int_t, child_t>;
 
-
-
 	template < typename R, typename element_t, typename ... index_t > class _SurrogateTable
 	{
 		using link_t = typename element_t::Link;
@@ -504,7 +502,7 @@ namespace tdb
 		template < typename T > void InstallIndex(T& t, size_t& n)
 		{
 			t.Open(io, n);
-		}
+		}	
 
 		template<size_t I = 0, typename... Tkey, typename... Tidx> void InsertIndex(const std::tuple<Tkey...>& ks, std::tuple<Tidx...>& dx, link_t v)
 		{
@@ -654,6 +652,30 @@ namespace tdb
 			auto t = new(p) element_t(args...);
 
 			InsertIndex<>(t->Keys(off), indexes, r->used++);
+
+			return *t;
+		}
+
+		template <typename ... t_args> element_t& EmplaceAt(size_t index, t_args ... args)
+		{
+			auto r = Root();
+
+			if (index >= r->capacity)
+				resize(index);
+
+			auto page = index / page_elements;
+			auto element = index % page_elements;
+
+			auto& _p = io->template Lookup<page_t>(r->pages[page]);
+			auto l = _p.elements + element;
+
+			auto size = element_t::Size(args...);
+			auto [p, off] = io->Incidental(size);
+			*l = (link_t)off;
+
+			auto t = new(p) element_t(args...);
+
+			InsertIndex<>(t->Keys(off), indexes, index);
 
 			return *t;
 		}

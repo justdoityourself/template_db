@@ -65,7 +65,7 @@ namespace tdb
 			}
 		}
 
-		template <typename V> void Find(uint64_t k, const V& v)
+		template <typename V> void Insert(uint64_t k, const V& v)
 		{
 			auto p = (char*)io->GetObject(k);
 			return Insert(std::string_view(p, strlen(p)),v);
