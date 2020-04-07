@@ -23,10 +23,10 @@ namespace tdb
 		{
 			void Lock()
 			{
-				auto lock = (std::atomic<int_t>*) & lock;
+				auto _lock = (std::atomic<int_t>*) & lock;
 
 				int_t expected = 0;
-				while (!lock->compare_exchange_strong(expected, (int_t)-1))
+				while (!_lock->compare_exchange_strong(expected, (int_t)-1))
 				{
 					expected = 0;
 					std::this_thread::sleep_for(lock_delay);
@@ -35,17 +35,17 @@ namespace tdb
 
 			void Wait()
 			{
-				auto lock = (std::atomic<int_t>*) & lock;
+				auto _lock = (std::atomic<int_t>*) & lock;
 
-				while (lock->load() == (int_t)-1)
+				while (_lock->load() == (int_t)-1)
 					std::this_thread::sleep_for(lock_delay);
 			}
 
 			void Unlock()
 			{
-				auto lock = (std::atomic<int_t>*) & int_t;
+				auto _lock = (std::atomic<int_t>*) & lock;
 
-				lock->store((int_t)0);
+				_lock->store((int_t)0);
 			}
 
 			int_t lock = 0;
@@ -93,12 +93,17 @@ namespace tdb
 
 		template <typename T, typename V> auto WriteLock(const T& k, const V& v)
 		{
-			return _Write<true>(k, gsl::span<uint8_t>((uint8_t*)&v, sizeof(V)), std::is_integral<V>());
+			return _WriteLock(k, gsl::span<uint8_t>((uint8_t*)&v, sizeof(V)), std::is_integral<V>());
 		}
 
 		template <typename T, typename V> auto _WriteLock(const T& k, const V& v, std::true_type)
 		{
 			return _Write<true>(k, gsl::span<uint8_t>((uint8_t*)&v, sizeof(V)), std::bool_constant<false>());
+		}
+
+		template <typename T, typename V> auto _WriteLock(const T& k, const V& v, std::false_type)
+		{
+			return _Write<true>(k, v, std::bool_constant<false>());
 		}
 
 		template <bool lock_v, typename T, typename V> auto _Write(const T & k, const V & v, std::false_type)

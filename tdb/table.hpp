@@ -517,7 +517,7 @@ namespace tdb
 			std::get<I>(dx).InsertLock(std::get<I>(ks), v);
 
 			if constexpr (I + 1 != sizeof...(Tidx))
-				InsertIndexLock<I + 1>(ks, dx);
+				InsertIndexLock<I + 1>(ks, dx,v);
 		}
 
 		void _Open(size_t& n)

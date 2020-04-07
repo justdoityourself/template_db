@@ -89,6 +89,12 @@ namespace tdb
 			return Insert(std::string_view(p, strlen(p)),v);
 		}
 
+		template <typename V> void InsertLock(uint64_t k, const V& v)
+		{
+			auto p = (char*)io->GetObject(k);
+			return InsertLock(std::string_view(p, strlen(p)), v);
+		}
+
 		template <typename V> auto Find(std::string_view k)
 		{
 			std::set<V> _result;
