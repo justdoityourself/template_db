@@ -40,12 +40,26 @@ namespace tdb
 
 		template <typename V> void Insert(std::string_view k, const V& v)
 		{
+			return _Insert<false>(k, v);
+		}
+
+		template <typename V> void InsertLock(std::string_view k, const V& v)
+		{
+			return _Insert<true>(k, v);
+		}
+
+		template <bool lock_v,typename V> void _Insert(std::string_view k, const V& v)
+		{
 			if (k.size() < lim_c)
 			{
 				int_t kk = 0;
 
 				std::memcpy(&kk, k.data(), k.size());
-				bucket.Write(kk, v);
+				
+				if constexpr(lock_v)
+					bucket.WriteLock(kk, v);
+				else
+					bucket.Write(kk, v);
 			}
 			else
 			{
@@ -59,7 +73,11 @@ namespace tdb
 					if (inserted.find(kk.key) == inserted.end())
 					{
 						inserted.insert(kk.key);
-						bucket.Write(kk, v);
+
+						if constexpr (lock_v)
+							bucket.WriteLock(kk, v);
+						else
+							bucket.Write(kk, v);
 					}
 				}
 			}

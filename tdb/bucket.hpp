@@ -132,7 +132,7 @@ namespace tdb
 				uint8_t* bin = (uint8_t*)(lh + 1);
 				std::copy(v.begin(), v.end(), bin);
 
-				*ptr = offset;
+				*ptr = offset; //Release out inserter lock.
 				return std::make_pair(ptr, false);
 			}
 
@@ -198,7 +198,7 @@ namespace tdb
 			return std::make_pair(ptr, true);
 		}
 
-		template < typename K > std::vector<uint8_t> Read(const K& k)
+		template < typename K > std::vector<uint8_t> Read(const K& k) // todo when needed, locking version.
 		{
 			auto ptr = index.Find(k);
 
@@ -226,7 +226,7 @@ namespace tdb
 			return result;
 		}
 
-		template < typename K, typename F > void Stream(const K& k, F && f)
+		template < typename K, typename F > void Stream(const K& k, F && f) // todo when needed, locking version.
 		{
 			auto ptr = index.Find(k);
 
