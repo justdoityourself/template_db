@@ -730,12 +730,12 @@ namespace tdb
 
 		template <typename ... t_args> element_t& InsertCopyAt(size_t index, const element_t& copy)
 		{
-			return _EmplaceAt<false>(index, copy);
+			return _InsertCopyAt<false>(index, copy);
 		}
 
-		template <typename ... t_args> element_t& _InsertCopyAtLock(size_t index, const element_t& copy)
+		template <typename ... t_args> element_t& InsertCopyAtLock(size_t index, const element_t& copy)
 		{
-			return _EmplaceAt<true>(index, copy);
+			return _InsertCopyAt<true>(index, copy);
 		}
 
 		template < size_t I, typename T > element_t* FindSurrogate(T* ref)

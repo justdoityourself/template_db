@@ -21,7 +21,7 @@ namespace tdb
 				return sizeof(FileT) + strlen(names) + 1 + parents.size() * sizeof(uint32_t) + keys.size() + sizeof(SEG) * runs.size();
 			}
 
-			size_t Size()
+			size_t Size() const
 			{
 				return ((size_t)seg_offset) + seg_count * sizeof(SEG);
 			}
