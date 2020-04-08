@@ -21,6 +21,11 @@ namespace tdb
 				return sizeof(FileT) + strlen(names) + 1 + parents.size() * sizeof(uint32_t) + keys.size() + sizeof(SEG) * runs.size();
 			}
 
+			size_t Size()
+			{
+				return ((size_t)seg_offset) + seg_count * sizeof(SEG);
+			}
+
 			template < typename RUNS> FileT(uint64_t _size, uint64_t _time, const char* names, std::vector<uint32_t> parents, const std::vector<uint8_t>& keys, const RUNS& runs)
 				: size(_size)
 				, time(_time)

@@ -700,6 +700,44 @@ namespace tdb
 			return _EmplaceAt<true>(index, args...);
 		}
 
+		template <bool lock_v, typename ... t_args> element_t& _InsertCopyAt(size_t index, const element_t& copy)
+		{
+			auto r = Root();
+
+			if (index >= r->capacity)
+				resize(index);
+
+			auto page = index / page_elements;
+			auto element = index % page_elements;
+
+			auto& _p = io->template Lookup<page_t>(r->pages[page]);
+			auto l = _p.elements + element;
+
+			auto size = copy.Size();
+			auto [p, off] = io->Incidental(size);
+			*l = (link_t)off;
+
+			std::copy((uint8_t*)&copy, ((uint8_t*)&copy) + size, p);
+			auto t = (element_t*)p;
+
+			if constexpr (lock_v)
+				InsertIndexLock<>(t->Keys(off), indexes, index);
+			else
+				InsertIndex<>(t->Keys(off), indexes, index);
+
+			return *t;
+		}
+
+		template <typename ... t_args> element_t& InsertCopyAt(size_t index, const element_t& copy)
+		{
+			return _EmplaceAt<false>(index, copy);
+		}
+
+		template <typename ... t_args> element_t& _InsertCopyAtLock(size_t index, const element_t& copy)
+		{
+			return _EmplaceAt<true>(index, copy);
+		}
+
 		template < size_t I, typename T > element_t* FindSurrogate(T* ref)
 		{
 			return Find<I>(0, (void*)ref);
