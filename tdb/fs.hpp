@@ -6,7 +6,7 @@
 
 namespace tdb
 {
-	namespace fs
+	namespace filesystem
 	{
 		//16TB with 4kb cluster
 		using Segment32 = _Segment<uint32_t>;
@@ -14,21 +14,21 @@ namespace tdb
 #pragma pack(push, 1)
 		template < typename SEG, typename KEY = Key32 > struct FileT
 		{
-			File() {}
+			FileT() {}
 
 			template < typename RUNS> static size_t Size(uint64_t size, uint64_t time, const char* names, std::vector<uint32_t> parents, const std::vector<uint8_t>& keys, const RUNS& runs)
 			{
-				return sizeof(File) + strlen(names) + 1 + parents.size() * sizeof(uint32_t) + keys.size() + sizeof(SEG) * runs.size();
+				return sizeof(FileT) + strlen(names) + 1 + parents.size() * sizeof(uint32_t) + keys.size() + sizeof(SEG) * runs.size();
 			}
 
-			template < typename RUNS> File(uint64_t _size, uint64_t time, const char* names, std::vector<uint32_t> parents, const std::vector<uint8_t>& keys, const RUNS& runs)
+			template < typename RUNS> FileT(uint64_t _size, uint64_t _time, const char* names, std::vector<uint32_t> parents, const std::vector<uint8_t>& keys, const RUNS& runs)
 				: size(_size)
-				, parent(_parent)
+				, time(_time)
 			{
 				size_t l1 = strlen(names) + 1;
 				std::copy(names, names + l1, (char*)(this + 1));
 
-				parent_offset = sizeof(File) + l1;
+				parent_offset = sizeof(FileT) + l1;
 				parent_count = parents.size();
 
 				std::copy(keys.begin(), keys.end(), (uint32_t*)((uint8_t*)this) + key_offset);
@@ -41,7 +41,7 @@ namespace tdb
 				seg_offset = key_offset + keys.size();
 				seg_count = runs.size();
 
-				auto sp = (SEG*)(((uint8_t*)this) + seg_offset)
+				auto sp = (SEG*)(((uint8_t*)this) + seg_offset);
 				for(auto & r : runs)
 					*sp++ = SEG(r);
 			}
@@ -56,7 +56,7 @@ namespace tdb
 
 			auto Keys(uint64_t n)
 			{
-				return std::make_tuple(n + sizeof(File),
+				return std::make_tuple(n + sizeof(FileT),
 					n + key_offset + (key_count - 1) * sizeof(KEY),
 					gsl::span<SEG>((SEG*)(((uint8_t*)(this)) + seg_offset), seg_count));
 			}
@@ -78,11 +78,11 @@ namespace tdb
 		using E = SimpleSurrogateTableBuilder32 <FileT<Segment32>>;
 		using NameSearch = StringSearch32<R>;
 		using HashSearch = BTree< R, SurrogateKeyPointer32<R> >;
-		using MountSearch = BTree< R, OrderedSegmentPointer32<uint64_t> >;
+		using MountSearch = BTree< R, OrderedSegmentPointer32<uint32_t> >;
 
 		using NameNull = NullStringSearch32<R>;
 		using HashNull = NullIndex< R, SurrogateKeyPointer32<R> >;
-		using MountNull = NullIndex< R, OrderedSegmentPointer32<uint64_t> >;
+		using MountNull = NullIndex< R, OrderedSegmentPointer32<uint32_t> >;
 
 		using FullIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameSearch, HashSearch, MountSearch > >; //This is too expensive ATM, todo optimize.
 		using NoIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashNull, MountNull > >;

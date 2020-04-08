@@ -641,7 +641,7 @@ namespace tdb
 	{
 		_Segment() {}
 		_Segment(const std::pair<int_t, int_t>& p) : start(p.first), length(p.second) {}
-		template < typename T > _Segment(const T& t) : start((int_t)t.start), length((int_t)t.length) {}
+		template < typename T > explicit  _Segment(const T& t) : start((int_t)t.start), length((int_t)t.length) {}
 		_Segment(int_t o, int_t l) : start(o), length(l) {}
 
 		int_t start = 0;
