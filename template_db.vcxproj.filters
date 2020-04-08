@@ -84,6 +84,12 @@
     <ClInclude Include="tdb\tdb.hpp">
       <Filter>tdb</Filter>
     </ClInclude>
+    <ClInclude Include="tdb\null_index.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
+    <ClInclude Include="tdb\fs.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="tdb.cpp">

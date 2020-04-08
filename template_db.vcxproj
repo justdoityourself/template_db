@@ -306,6 +306,7 @@
     <ClInclude Include="tdb\bucket.hpp" />
     <ClInclude Include="tdb\builder.hpp" />
     <ClInclude Include="tdb\databases.hpp" />
+    <ClInclude Include="tdb\fs.hpp" />
     <ClInclude Include="tdb\hash.hpp" />
     <ClInclude Include="tdb\host.hpp" />
     <ClInclude Include="tdb\interface.hpp" />
@@ -314,6 +315,7 @@
     <ClInclude Include="tdb\legacy.hpp" />
     <ClInclude Include="tdb\mapping.hpp" />
     <ClInclude Include="tdb\net.hpp" />
+    <ClInclude Include="tdb\null_index.hpp" />
     <ClInclude Include="tdb\pages.hpp" />
     <ClInclude Include="tdb\recycling.hpp" />
     <ClInclude Include="tdb\string.hpp" />

@@ -5,6 +5,7 @@
 #include "builder.hpp"
 #include "bucket.hpp"
 #include "btree.hpp"
+#include "null_index.hpp"
 #include "pages.hpp"
 #include "table.hpp"
 #include "string.hpp"

@@ -4,6 +4,7 @@ namespace tdb
 {
 	/*
 		This module is intended for context relating / merging code.
+		Or other code common to modules.
 
 		In the form of:
 
@@ -15,14 +16,24 @@ namespace tdb
 
 
 
-	template < typename _TABLE, typename DB > class TableHelper : public _TABLE
+	template < typename _TABLE, typename DB > class TableHelper
 	{
+		_TABLE& table;
 		DB& database;
 	public:
 
-		TableHelper(DB& _database, const _TABLE& table)
+		TableHelper(DB& _database, const _TABLE& _table)
 			: database(_database)
-			, _TABLE(table) {}
+			, _TABLE(_table) {}
+
+		template < typename F, size_t value_c > void StringSearch(std::string_view text,F && f)
+		{
+			table.Iterate([&](auto & row)
+			{
+				if(-1 != row.Value<value_c>().find(text))
+					f(row);
+			});
+		}
 
 		/*
 			Operations that take place from the context of the TABLE and DATABASE go here:

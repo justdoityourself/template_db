@@ -8,7 +8,6 @@ namespace tdb
 
 	template < typename R, typename link_t, typename int_t, size_t min_alloc, typename index_t > class _StreamBucket
 	{
-		static constexpr auto lock_delay = std::chrono::milliseconds(5);
 		index_t index;
 
 		R* io = nullptr;
@@ -21,34 +20,6 @@ namespace tdb
 
 		struct header
 		{
-			void Lock()
-			{
-				auto _lock = (std::atomic<int_t>*) & lock;
-
-				int_t expected = 0;
-				while (!_lock->compare_exchange_strong(expected, (int_t)-1))
-				{
-					expected = 0;
-					std::this_thread::sleep_for(lock_delay);
-				}
-			}
-
-			void Wait()
-			{
-				auto _lock = (std::atomic<int_t>*) & lock;
-
-				while (_lock->load() == (int_t)-1)
-					std::this_thread::sleep_for(lock_delay);
-			}
-
-			void Unlock()
-			{
-				auto _lock = (std::atomic<int_t>*) & lock;
-
-				_lock->store((int_t)0);
-			}
-
-			int_t lock = 0;
 			int_t total = 0;
 			link_t last = 0;
 		};
@@ -110,97 +81,90 @@ namespace tdb
 		{
 			if (!v.size()) return std::make_pair((link_t*)nullptr,false);
 
-			link_t* ptr; bool overwrite;
-
-			if constexpr(lock_v)
-				std::tie(ptr, overwrite) = index.InsertLock(k, link_t(0));
-			else
-				std::tie(ptr, overwrite) = index.Insert(k,link_t(0));
-
-			if (!overwrite) //The overwrite indicator is atomic
+			auto do_insert = [&](auto handle)
 			{
-				size_t size = v.size();
+				auto [ptr, overwrite] = handle;
 
-				if (size < min_alloc)
-					size = min_alloc;
+				if (!overwrite) //The overwrite indicator is atomic
+				{
+					size_t size = v.size();
 
-				auto [bucket, offset] = io->Incidental(sizeof(link) + sizeof(header) + size);
+					if (size < min_alloc)
+						size = min_alloc;
 
-				auto ph = (header*)bucket;
-				auto lh = (link*)(bucket + sizeof(header));
+					auto [bucket, offset] = io->Incidental(sizeof(link) + sizeof(header) + size);
 
-				ph->total = v.size();
-				ph->last = 0;
-				lh->next = 0;
-				lh->size = v.size();
+					if (!offset)
+						offset = 0;
+
+					auto ph = (header*)bucket;
+					auto lh = (link*)(bucket + sizeof(header));
+
+					ph->total = v.size();
+					ph->last = 0;
+					lh->next = 0;
+					lh->size = v.size();
+
+					uint8_t* bin = (uint8_t*)(lh + 1);
+					std::copy(v.begin(), v.end(), bin);
+
+					*ptr = offset;
+					return std::make_pair(ptr, false);
+				}
+
+				auto _header = io->GetObject(*ptr);
+
+				auto ph = (header*)_header;
+
+				auto lh = (link*)((ph->last) ? io->GetObject(ph->last) : (_header + sizeof(header)));
+
+				size_t rem = v.size(), off = 0;
 
 				uint8_t* bin = (uint8_t*)(lh + 1);
-				std::copy(v.begin(), v.end(), bin);
+				auto available = (lh->size > min_alloc) ? 0 : min_alloc - lh->size;
 
-				*ptr = offset; //Release out inserter lock.
-				return std::make_pair(ptr, false);
-			}
+				if (available > rem)
+					available = rem;
 
-			if constexpr (lock_v)
-			{
-				//we must wait until the block has been allocated by the inserter thread, the line above ... *ptr = offset ...
-				while(!*ptr)
-					std::this_thread::sleep_for(lock_delay);
-			}
+				if (available)
+				{
+					std::copy(v.begin(), v.begin() + available, bin + lh->size);
 
-			auto _header = io->GetObject(*ptr);
+					off += available;
+					rem -= available;
+					lh->size += available;
+				}
 
-			auto ph = (header*)_header;
+				if (rem)
+				{
+					size_t size = rem;
 
-			if constexpr (lock_v)
-				ph->Lock();
+					if (size < min_alloc)
+						size = min_alloc;
 
-			auto lh = (link*)((ph->last) ? io->GetObject(ph->last) : (_header + sizeof(header)));
+					auto [bucket, offset] = io->Incidental(sizeof(link) + size);
 
-			size_t rem = v.size(), off = 0;
+					auto lh2 = (link*)bucket;
 
-			uint8_t* bin = (uint8_t*)(lh + 1);
-			auto available = (lh->size > min_alloc) ? 0 : min_alloc - lh->size;
+					lh2->next = 0;
+					lh2->size = rem;
 
-			if (available > rem)
-				available = rem;
-				
-			if (available)
-			{
-				std::copy(v.begin(), v.begin() + available, bin + lh->size);
+					bin = (uint8_t*)(lh2 + 1);
 
-				off += available;
-				rem -= available;
-				lh->size += available;
-			}
+					std::copy(v.begin() + off, v.end(), bin);
 
-			if (rem)
-			{
-				size_t size = rem;
+					ph->last = lh->next = offset;
+				}
 
-				if (size < min_alloc)
-					size = min_alloc;
+				ph->total += v.size();
 
-				auto [bucket, offset] = io->Incidental(sizeof(link) + size);
-
-				auto lh2 = (link*)bucket;
-
-				lh2->next = 0;
-				lh2->size = rem;
-
-				bin = (uint8_t*)(lh2 + 1);
-
-				std::copy(v.begin()+off, v.end(), bin);
-
-				ph->last = lh->next = offset;
-			}
-
-			ph->total += v.size();
+				return std::make_pair(ptr, true);
+			};
 
 			if constexpr (lock_v)
-				ph->Unlock();
-
-			return std::make_pair(ptr, true);
+				return index.InsertLockContext(k, link_t(0),do_insert);
+			else
+				return do_insert(index.Insert(k, link_t(0)));
 		}
 
 		template < typename K > std::vector<uint8_t> Read(const K& k) // todo when needed, locking version.

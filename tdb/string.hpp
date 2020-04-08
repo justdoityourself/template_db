@@ -147,4 +147,52 @@ namespace tdb
 	};
 
 	template <typename R> using StringSearch = _StringSearch<R, _IntWrapper<uint32_t>, 3, _StreamBucket<R, uint64_t, uint64_t, 1024, BTree< R, SimpleOrderedListBuilder<64 * 1024, uint64_t, _IntWrapper<uint32_t> > > > >;
+	template <typename R> using StringSearch32 = _StringSearch<R, _IntWrapper<uint32_t>, 3, _StreamBucket<R, uint32_t, uint32_t, 1024, BTree< R, SimpleOrderedListBuilder<64 * 1024, uint32_t, _IntWrapper<uint32_t> > > > >;
+
+
+
+	template < typename R, typename int_t, size_t lim_c, typename bucket_t > class _NullStringSearch
+	{
+	public:
+
+		_NullStringSearch() {}
+
+		void Validate() {} //TODO
+
+		void Open(R* _io, size_t& _n) { }
+
+		template <typename V> void Insert(std::string_view k, const V& v)
+		{
+		}
+
+		template <typename V> void InsertLock(std::string_view k, const V& v)
+		{
+		}
+
+		template <bool lock_v, typename V> void _Insert(std::string_view k, const V& v)
+		{
+		}
+
+		template <typename V> void Insert(uint64_t k, const V& v)
+		{
+		}
+
+		template <typename V> void InsertLock(uint64_t k, const V& v)
+		{
+		}
+
+		template <typename V> auto Find(std::string_view k)
+		{
+			return std::vector<V>();
+		}
+
+		template <typename V> auto Find(uint64_t k)
+		{
+			return std::vector<V>();
+		}
+	};
+
+	template <typename R> using NullStringSearch = _NullStringSearch<R, _IntWrapper<uint32_t>, 3, _StreamBucket<R, uint64_t, uint64_t, 1024, BTree< R, SimpleOrderedListBuilder<64 * 1024, uint64_t, _IntWrapper<uint32_t> > > > >;
+	template <typename R> using NullStringSearch32 = _NullStringSearch<R, _IntWrapper<uint32_t>, 3, _StreamBucket<R, uint32_t, uint32_t, 1024, BTree< R, SimpleOrderedListBuilder<64 * 1024, uint32_t, _IntWrapper<uint32_t> > > > >;
+
 }

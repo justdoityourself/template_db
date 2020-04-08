@@ -632,6 +632,13 @@ namespace tdb
 			return std::get<DX>(indexes);
 		}
 
+		template < typename F > void Iterate(F && f)
+		{
+			for (size_t i = 0; i < size(); i++)
+				if (!f(At(index)))
+					break;
+		}
+
 		template <typename ... t_args> element_t& Emplace(t_args ... args)
 		{
 			auto r = Root();
@@ -734,4 +741,5 @@ namespace tdb
 		child_t >;
 
 	template < typename child_t, size_t page_s = 64 * 1024, typename int_t = uint64_t> using SimpleSurrogateTableBuilder = SurrogateTableBuilder<page_s, int_t, int_t, child_t>;
+	template < typename child_t, size_t page_s = 64 * 1024, typename int_t = uint32_t> using SimpleSurrogateTableBuilder32 = SurrogateTableBuilder<page_s, int_t, int_t, child_t>;
 }

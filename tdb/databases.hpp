@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "fs.hpp"
+
 namespace tdb
 {
 	

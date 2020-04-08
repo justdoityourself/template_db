@@ -641,7 +641,8 @@ namespace tdb
 	{
 		_Segment() {}
 		_Segment(const std::pair<int_t, int_t>& p) : start(p.first), length(p.second) {}
-		_Segment(int_t o, int_t l=1) : start(o), length(l) {}
+		template < typename T > _Segment(const T& t) : start((int_t)t.start), length((int_t)t.length) {}
+		_Segment(int_t o, int_t l) : start(o), length(l) {}
 
 		int_t start = 0;
 		int_t length = 0;
@@ -1018,6 +1019,76 @@ public:
 			}
 
 			return { nullptr,false };
+		}
+
+		template <typename F> pair<pointer_t*, bool> InsertLockContext(const key_t& k, const pointer_t& p, F && f)
+		{
+			node_t* current = Root();
+			link_t current_id = root_n;
+
+			if (!current)
+				return f(pair<pointer_t*, bool>{ nullptr, false });
+
+			node_t* next = nullptr;
+			size_t depth = 0;
+
+			while (current)
+			{
+				if (depth >= current->max_rec())
+					return f(pair<pointer_t*, bool>{ nullptr, false });
+
+				bool locked = false;
+				if (current->count != node_t::Bins) //Must be locked to insert
+				{
+					current->Lock();
+					locked = true;
+				}
+
+				pair<pointer_t*, bool> overwrite;
+				int result = current->Insert(k, p, overwrite, depth++, (void*)io);
+
+				if (!result)
+				{
+					auto tmp = f(overwrite);
+					if (locked) current->Unlock();
+					return tmp;
+				}
+				else
+				{
+					result--;
+
+					next = (current->links[result]) ? &io->template Lookup<node_t>(current->links[result]) : nullptr;
+
+					if (!next)
+					{
+						if (!locked) //We must be locked to edit links
+						{
+							current->Lock();
+							locked = true;
+						}
+
+						next = (current->links[result]) ? &io->template Lookup<node_t>(current->links[result]) : nullptr;
+
+						if (!next)
+						{
+							next = &io->template AllocateLock<node_t>();
+							next->Init();
+
+							//If the file was remapped, then this must be refreshed
+							current = &io->template Lookup<node_t>(current_id);
+
+							current->links[result] = io->template Index<node_t>(*next);
+						}
+					}
+
+					current_id = current->links[result];
+					if (locked) current->Unlock();
+
+					current = next;
+				}
+			}
+
+			return f(pair<pointer_t*, bool>{ nullptr,false });
 		}
 	};
 

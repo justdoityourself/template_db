@@ -143,12 +143,12 @@ TEST_CASE("Segment Simple", "[tdb::]")
 
         segments.Insert(Segment(15,5), uint64_t(1));
 
-        CHECK(*segments.Find(15) == 1);
+        CHECK(*segments.Find(Segment(15,1)) == 1);
         CHECK(*segments.Find(Segment(14,2)) == 1);
-        CHECK(!segments.Find(14));
-        CHECK(*segments.Find(19) == 1);
+        CHECK(!segments.Find(Segment(14,1)));
+        CHECK(*segments.Find(Segment(19,1)) == 1);
         CHECK(*segments.Find(Segment(18, 2)) == 1);
-        CHECK(!segments.Find(20));
+        CHECK(!segments.Find(Segment(20,1)));
     }
 
     std::filesystem::remove_all("db.dat");
