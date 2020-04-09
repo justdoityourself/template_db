@@ -36,7 +36,7 @@ namespace tdb
 				parent_offset = sizeof(FileT) + l1;
 				parent_count = parents.size();
 
-				std::copy(keys.begin(), keys.end(), (uint32_t*)((uint8_t*)this) + key_offset);
+				std::copy(parents.begin(), parents.end(), (uint32_t*)((uint8_t*)this) + parent_offset);
 
 				key_offset = parent_offset + parents.size()*sizeof(uint32_t);
 				key_count = keys.size() / sizeof(KEY);
@@ -77,6 +77,7 @@ namespace tdb
 			uint16_t seg_offset;
 			uint16_t seg_count;
 		};
+
 #pragma pack(pop)
 
 		using R = AsyncMap<128 * 1024 * 1024>;
@@ -92,6 +93,7 @@ namespace tdb
 		using FullIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameSearch, HashSearch, MountSearch > >; //This is too expensive ATM, todo optimize.
 		using NoIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashNull, MountNull > >;
 		using HalfIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashSearch, MountSearch > >;
+		using MinimalIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashSearch, MountNull > >;
 
 		enum class Tables { Files };
 		enum class Indexes { Names, Hash, Runs };

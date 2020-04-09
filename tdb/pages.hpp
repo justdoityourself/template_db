@@ -39,6 +39,7 @@ namespace tdb
 	template <size_t fuzzy_c> using FuzzyHashPointerT =		SimpleFuzzyHashBuilder<64 * 1024 , uint64_t, Key32, fuzzy_c>;
 	template <size_t fuzzy_c> using BigFuzzyHashPointerT =	SimpleFuzzyHashBuilder<256 * 1024, uint64_t, Key32, fuzzy_c>;
 							  using FuzzyHashPointer =		SimpleFuzzyHashBuilder<64 * 1024 , uint64_t, Key32, 4>;
+							  using FuzzyHashPointer32 =	SimpleFuzzyHashBuilder<64 * 1024, uint32_t, Key32, 4>;
 
 
 	//Other node types can map a key to keys, or keys and pointers:

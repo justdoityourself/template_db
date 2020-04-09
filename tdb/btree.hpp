@@ -20,61 +20,6 @@ namespace tdb
 #pragma warning( push )
 #pragma warning( disable : 4200 )
 
-	template <typename T, size_t C> struct _OrderedArray
-	{
-		array<T, C> elements;
-		size_t count = 0;
-
-		void Expand(int c)
-		{
-			for (int i = (int)count - 1; i >= c; i--)
-				elements[i + 1] = elements[i];
-
-			count++;
-		}
-
-		template <typename F> int Insert(const T& k, F f)
-		{
-			if (count == C)
-				return -1;
-
-			if (!count)
-			{
-				elements[0] = k;
-				count++;
-
-				return 0;
-			}
-
-			int low = 0;
-			int high = (int)count - 1;
-
-			while (low <= high)
-			{
-				int middle = (low + high) >> 1;
-
-				switch (f(elements[middle], k))
-				{
-				case -1:
-					low = middle + 1;
-					break;
-				case 1:
-					high = middle - 1;
-					break;
-				case 0:
-					low = middle;
-					goto BREAK;
-				}
-			}
-		BREAK:
-			Expand(low);
-
-			elements[low] = k;
-
-			return 0;
-		}
-	};
-
 	template <typename T> struct ScopedLock
 	{
 		bool locked = false;
@@ -118,7 +63,7 @@ namespace tdb
 			auto lock = (std::atomic<int_t> * )& footer_guard;
 
 			int_t expected = (int_t)_guard;
-			while (!lock->compare_exchange_strong(expected, 0))
+			while (!lock->compare_exchange_weak(expected, 0, std::memory_order_acquire))
 			{
 				expected = (int_t)_guard;
 				std::this_thread::sleep_for(lock_delay);
@@ -139,7 +84,7 @@ namespace tdb
 		{
 			auto lock = (std::atomic<int_t> * )& footer_guard;
 
-			lock->store((int_t)_guard);
+			lock->store((int_t)_guard, std::memory_order_release);
 		}
 
 		void Expand(int c)
