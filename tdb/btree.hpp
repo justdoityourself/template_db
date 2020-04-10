@@ -350,13 +350,16 @@ namespace tdb
 
 						auto upper = middle;
 
-						f(pointers + middle);
+						if (!f(pointers + middle))
+							return 0;
 
-						while (upper < bin_c-1 && keys[upper + 1].Compare(k, ref_pages, ref_page2) == 0)
-							f(pointers + ++upper);	
+						while (upper < bin_c - 1 && keys[upper + 1].Compare(k, ref_pages, ref_page2) == 0)
+							if (!f(pointers + ++upper))
+								return 0;
 
 						while (middle > 0 && keys[middle - 1].Compare(k, ref_pages, ref_page2) == 0)
-							f(pointers + --middle);
+							if (!f(pointers + --middle))
+								return 0;
 
 						return (middle * link_c / bin_c) + 1;
 					}
@@ -364,13 +367,16 @@ namespace tdb
 					{
 						auto upper = middle;
 
-						f(pointers + middle);
+						if (!f(pointers + middle))
+							return 0;
 
 						while (upper < count - 1 && keys[upper + 1].Compare(k, ref_pages, ref_page2) == 0)
-							f(pointers + ++upper);
+							if (!f(pointers + ++upper))
+								return 0;
 
 						while (middle > 0 && keys[middle - 1].Compare(k, ref_pages, ref_page2) == 0)
-							f(pointers + --middle);
+							if (!f(pointers + --middle))
+								return 0;
 
 						return 0;
 					}

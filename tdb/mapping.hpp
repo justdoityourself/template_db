@@ -89,7 +89,15 @@ namespace tdb
 			map.sync(c); 
 		}
 		string_view Name() { return name; }
-		void Close() { map.unmap(); }
+		void Close(bool shrink=false) 
+		{ 
+			auto size = Header().size;
+
+			map.unmap(); 
+
+			if (shrink)
+				fs::resize_file(name, size + sizeof(_Header));
+		}
 
 		bool Stale(uint64_t size=0) const
 		{
@@ -443,7 +451,15 @@ namespace tdb
 
 		string_view Name() { return name; }
 
-		void Close() { list.clear(); }
+		void Close(bool shrink = false) 
+		{ 
+			auto size = Header().size;
+
+			list.clear();
+
+			if (shrink)
+				fs::resize_file(name, size + sizeof(_Header));
+		}
 
 		bool Stale(uint64_t size = 0) const
 		{

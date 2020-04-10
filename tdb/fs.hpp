@@ -83,11 +83,11 @@ namespace tdb
 		using R = AsyncMap<128 * 1024 * 1024>;
 		using E = SimpleSurrogateTableBuilder32 <FileT<Segment32>>;
 		using NameSearch = StringSearch32<R>;
-		using HashSearch = BTree< R, SurrogateKeyPointer32<R> >;
+		using HashSearch = BTree< R, MultiSurrogateKeyPointer32<R> >;
 		using MountSearch = BTree< R, OrderedSegmentPointer32<uint32_t> >;
 
 		using NameNull = NullStringSearch32<R>;
-		using HashNull = NullIndex< R, SurrogateKeyPointer32<R> >;
+		using HashNull = NullIndex< R, MultiSurrogateKeyPointer32<R> >;
 		using MountNull = NullIndex< R, OrderedSegmentPointer32<uint32_t> >;
 
 		using FullIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameSearch, HashSearch, MountSearch > >; //This is too expensive ATM, todo optimize.
@@ -95,8 +95,8 @@ namespace tdb
 		using HalfIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashSearch, MountSearch > >;
 		using MinimalIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashSearch, MountNull > >;
 
-		enum class Tables { Files };
-		enum class Indexes { Names, Hash, Runs };
-		enum class Values { Size, Time, Names,Parents,Keys,Runs };
+		enum Tables { Files };
+		enum Indexes { Names, Hash, Disk };
+		enum Values { Size, Time, Name,Parent,Keys,Runs };
 	}
 }

@@ -16,22 +16,25 @@ namespace tdb
 
 
 
-	template < typename _TABLE, typename DB > class TableHelper
+	template < typename DB, typename _TABLE> class TableHelper
 	{
 		_TABLE& table;
 		DB& database;
 	public:
 
-		TableHelper(DB& _database, const _TABLE& _table)
+		TableHelper(DB& _database, _TABLE& _table)
 			: database(_database)
-			, _TABLE(_table) {}
+			, table(_table) {}
 
-		template < typename F, size_t value_c > void StringSearch(std::string_view text,F && f)
+		template < size_t value_c, typename F> void StringSearch(std::string_view text,F && f)
 		{
 			table.Iterate([&](auto & row)
 			{
-				if(-1 != row.Value<value_c>().find(text))
-					f(row);
+				bool _continue = true;
+				if(-1 != std::string_view(row.Value<value_c>()).find(text))
+					_continue = f(row);
+
+				return _continue;
 			});
 		}
 
@@ -60,11 +63,11 @@ namespace tdb
 
 	template < typename _INDEX, typename DB > class KeyValueIndex : public _INDEX
 	{
-		DB& database;
+		DB& db;
 
 	public:
 		KeyValueIndex(DB& _database, const _INDEX& index)
-			: database(_database)
+			: db(_database)
 			, _INDEX(index) {}
 
 		/*

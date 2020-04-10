@@ -579,7 +579,7 @@ namespace tdb
 			_Open(_n);
 		}
 
-		size_t size() { return (size_t)Root()->used; }
+		size_t size() { return (size_t)Root()->capacity; }
 
 		void resize(size_t count)
 		{
@@ -635,7 +635,7 @@ namespace tdb
 		template < typename F > void Iterate(F && f)
 		{
 			for (size_t i = 0; i < size(); i++)
-				if (!f(At(index)))
+				if (!f(At(i)))
 					break;
 		}
 
@@ -762,7 +762,7 @@ namespace tdb
 		{
 			std::get<I>(indexes).MultiFind([&, f = std::move(f)](auto* dx)
 			{
-				f(At(*dx));
+				return f(At(*dx));
 			}, k, ref);
 		}
 	};
