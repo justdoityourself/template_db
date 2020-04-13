@@ -33,18 +33,18 @@ namespace tdb
 				size_t l1 = strlen(names) + 1;
 				std::copy(names, names + l1, (char*)(this + 1));
 
-				parent_offset = sizeof(FileT) + l1;
-				parent_count = parents.size();
+				parent_offset = (uint16_t)(sizeof(FileT) + l1);
+				parent_count = (uint16_t)parents.size();
 
 				std::copy(parents.begin(), parents.end(), (uint32_t*)((uint8_t*)this) + parent_offset);
 
-				key_offset = parent_offset + parents.size()*sizeof(uint32_t);
-				key_count = keys.size() / sizeof(KEY);
+				key_offset = (uint16_t)(parent_offset + parents.size()*sizeof(uint32_t));
+				key_count = (uint16_t)keys.size() / sizeof(KEY);
 
 				std::copy(keys.begin(), keys.end(), ((uint8_t*)this) + key_offset);
 
-				seg_offset = key_offset + keys.size();
-				seg_count = runs.size();
+				seg_offset = (uint16_t)(key_offset + keys.size());
+				seg_count = (uint16_t)runs.size();
 
 				auto sp = (SEG*)(((uint8_t*)this) + seg_offset);
 				for(auto & r : runs)

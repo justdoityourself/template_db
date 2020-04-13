@@ -958,7 +958,7 @@ public:
 							//If the file was remapped, then this must be refreshed
 							current = &io->template Lookup<node_t>(current_id);
 
-							current->links[result] = io->template Index<node_t>(*next);
+							current->links[result] = (link_t)io->template Index<node_t>(*next);
 						}
 					}
 
