@@ -199,7 +199,7 @@ namespace tdb
 		{
 			std::get<I>(indexes).MultiFind( [&, f = std::move(f)] (auto* dx)
 			{
-				f(At(*dx)); 
+				return f(At(*dx)); 
 			} ,k, ref);
 		}
 

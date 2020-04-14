@@ -97,22 +97,28 @@ TEST_CASE("Surrogate Table", "[tdb::]")
         for (auto& i : check_work)
         {
             element_table.MultiFindSurrogate< FirstName >([&](auto& element)
-                {
-                    if (element.id == j)
-                        fcount++;
-                }, std::get< FirstName >(i).c_str());
+            {
+                if (element.id == j)
+                    fcount++;
+
+                return true;
+            }, std::get< FirstName >(i).c_str());
 
             element_table.MultiFindSurrogate< LastName >([&](auto& element)
-                {
-                    if (element.id == j)
-                        lcount++;
-                }, std::get< LastName >(i).c_str());
+            {
+                if (element.id == j)
+                    lcount++;
+
+                return true;
+            }, std::get< LastName >(i).c_str());
 
             element_table.MultiFindSurrogate< Address >([&](auto& element)
-                {
-                    if (element.id == j)
-                        acount++;
-                }, std::get< Address >(i).c_str());
+            {
+                if (element.id == j)
+                    acount++;
+
+                return true;
+            }, std::get< Address >(i).c_str());
 
             j++;
         }
@@ -305,22 +311,28 @@ TEST_CASE("Multimap", "[tdb::]")
         for (auto& i : check_work)
         {
             element_table.MultiFindSurrogate< FirstName >([&](auto& element)
-                {
-                    if (element.id == j)
-                        fcount++;
-                },std::get< FirstName >(i).c_str());
+            {
+                if (element.id == j)
+                    fcount++;
+
+                return true;
+            },std::get< FirstName >(i).c_str());
 
             element_table.MultiFindSurrogate< LastName >([&](auto& element)
-                {
-                    if (element.id == j)
-                        lcount++;
-                }, std::get< LastName >(i).c_str());
+            {
+                if (element.id == j)
+                    lcount++;
+
+                return true;
+            }, std::get< LastName >(i).c_str());
 
             element_table.MultiFindSurrogate< Address >([&](auto& element)
-                {
-                    if (element.id == j)
-                        acount++;
-                }, std::get< Address >(i).c_str());
+            {
+                if (element.id == j)
+                    acount++;
+
+                return true;
+            }, std::get< Address >(i).c_str());
 
             j++;
         }

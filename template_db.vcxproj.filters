@@ -78,9 +78,6 @@
     <ClInclude Include="tdb\string.hpp">
       <Filter>tdb</Filter>
     </ClInclude>
-    <ClInclude Include="tdb\json.hpp">
-      <Filter>tdb</Filter>
-    </ClInclude>
     <ClInclude Include="tdb\tdb.hpp">
       <Filter>tdb</Filter>
     </ClInclude>
@@ -88,6 +85,9 @@
       <Filter>tdb</Filter>
     </ClInclude>
     <ClInclude Include="tdb\fs.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
+    <ClInclude Include="tdb\document.hpp">
       <Filter>tdb</Filter>
     </ClInclude>
   </ItemGroup>

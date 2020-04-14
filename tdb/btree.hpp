@@ -40,7 +40,7 @@ namespace tdb
 		}
 	};
 
-	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c > struct _BaseNode
+	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, bool check_v = false > struct _BaseNode
 	{
 		static const uint64_t _guard = 0xfe3451dceabc45afull;
 
@@ -98,10 +98,99 @@ namespace tdb
 			count++;
 		}
 
+		bool Validate()
+		{
+			if constexpr (check_v)
+			{
+				int_t _checksum = 0;
 
+				for (int_t i = 0; i < count; i++)
+				{
+					int_t* ptr = (int_t*)&keys[i];
+
+					for (size_t i = 0; sizeof(key_t) / sizeof(int_t); i++, ptr++)
+						_checksum ^= *ptr;
+				}
+
+				return _checksum == checksum;
+			}
+			else
+				return true;
+		}
+
+		void CheckKey(const key_t&k)
+		{
+			if constexpr (check_v)
+			{
+				static_assert(sizeof(key_t) % sizeof(int_t) == 0);
+				int_t* ptr = (int_t*)&k;
+
+				for (size_t i = 0; sizeof(key_t) / sizeof(int_t); i++, ptr++)
+					checksum ^= *ptr;
+			}
+		}
 	};
 
-	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, size_t padding_c = 0 > struct _OrderedListNode : public _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>
+	//TODO LOCAL SURROGATE, benchmark
+	/*template < typename surrogate_t,typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c > struct _LocalSurrogateBaseNode
+	{
+		static const uint64_t _guard = 0xfe3451dceabc45afull;
+
+		key_t keys[bin_c];
+
+		pointer_t pointers[bin_c];
+
+		surrogate_t list[bin_c];
+
+		link_t links[link_c] = { 0 };
+
+		int_t count = 0;
+
+		int_t checksum = (int_t)0;
+
+		int_t footer_guard = (int_t)_guard;
+
+		void Lock()
+		{
+			static constexpr auto lock_delay = std::chrono::milliseconds(5);
+
+			auto lock = (std::atomic<int_t>*) & footer_guard;
+
+			int_t expected = (int_t)_guard;
+			while (!lock->compare_exchange_weak(expected, 0, std::memory_order_acquire))
+			{
+				expected = (int_t)_guard;
+				std::this_thread::sleep_for(lock_delay);
+			}
+		}
+
+		void Wait()
+		{
+			static constexpr auto lock_delay = std::chrono::milliseconds(5);
+
+			auto lock = (std::atomic<int_t>*) & footer_guard;
+
+			while (lock->load() == 0)
+				std::this_thread::sleep_for(lock_delay);
+		}
+
+		void Unlock()
+		{
+			auto lock = (std::atomic<int_t>*) & footer_guard;
+
+			lock->store((int_t)_guard, std::memory_order_release);
+		}
+
+		void Expand(int c)
+		{
+			for (int i = (int)count - 1; i >= c; i--)
+				memcpy(list + (i + 1), list + i, sizeof(surrogate_t));
+
+			count++;
+		}
+	};*/
+
+	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, size_t padding_c = 0, bool check_v = false > struct _OrderedListNode : public _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>
 	{
 		uint8_t padding[padding_c];
 
@@ -117,6 +206,7 @@ namespace tdb
 		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::pointers;
 		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::links;
 		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::count;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::CheckKey;
 		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::Expand;
 
 		void Init() {}
@@ -128,6 +218,8 @@ namespace tdb
 			overwrite = { nullptr,false };
 			if (!count)
 			{
+				CheckKey(k);
+
 				keys[0] = k;
 				pointers[0] = p;
 				count++;
@@ -170,6 +262,8 @@ namespace tdb
 			}
 			else
 			{
+				CheckKey(k);
+
 				Expand(low);
 
 				keys[low] = k;
@@ -223,7 +317,8 @@ namespace tdb
 		}
 	};
 
-	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, size_t padding_c = 0 > struct _OrderedMultiListNode : public _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>
+	//TODO LOCAL SURROGATE, benchmark
+	/*template < typename surrogate_t, typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, size_t padding_c = 0 > struct _LocalSurrogateOrderedListNode : public _LocalSurrogateBaseNode<surrogate_t,int_t, key_t, pointer_t, link_t, bin_c, link_c>
 	{
 		uint8_t padding[padding_c];
 
@@ -275,6 +370,132 @@ namespace tdb
 					high = middle - 1;
 					break;
 				case 0:
+					overwrite = { pointers + middle,true };
+					//pointers[middle] = p; // We allow the call to update the existing object if needed / wanted.
+					return 0;
+				}
+			}
+
+			if (count == bin_c)
+			{
+				if (low == bin_c)
+					low--;
+				else if (low == -1)
+					low++;
+
+				return (low * link_c / bin_c) + 1;
+			}
+			else
+			{
+				Expand(low);
+
+				keys[low] = k;
+				pointers[low] = p;
+
+				overwrite = { pointers + low, false };
+
+				return 0;
+			}
+		}
+
+		int Find(const key_t& k, pointer_t** pr, size_t depth, void* ref_pages, void* ref_page2)
+		{
+			*pr = nullptr;
+
+			if (!count)
+				return 0;
+
+			int low = 0;
+			int high = (int)count - 1;
+
+			while (low <= high)
+			{
+				int middle = (low + high) >> 1;
+
+				switch (keys[middle].Compare(k, ref_pages, ref_page2))
+				{
+				case -1:
+					low = middle + 1;
+					break;
+				case 1:
+					high = middle - 1;
+					break;
+				case 0:
+					*pr = pointers + middle;
+					return 0;
+				}
+			}
+
+			if (count == bin_c)
+			{
+				if (low == bin_c)
+					low--;
+				else if (low == -1)
+					low++;
+
+				return (low * link_c / bin_c) + 1;
+			}
+			else
+				return 0;
+		}
+	};*/
+
+
+	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, size_t padding_c = 0, bool check_v = false > struct _OrderedMultiListNode : public _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>
+	{
+		uint8_t padding[padding_c];
+
+		using Pointer = pointer_t;
+		using Key = key_t;
+		using Int = int_t;
+		using Link = link_t;
+		static const int Bins = bin_c;
+		static const int Links = link_c;
+		static const int Padding = padding_c;
+
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::keys;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::pointers;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::links;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::count;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::Expand;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::CheckKey;
+
+		void Init() {}
+
+		size_t max_rec() { return (size_t)-1; }
+
+		int Insert(const key_t& k, const pointer_t& p, pair<pointer_t*, bool>& overwrite, size_t depth, void* ref_pages)
+		{
+			overwrite = { nullptr,false };
+			if (!count)
+			{
+				CheckKey(k);
+
+				keys[0] = k;
+				pointers[0] = p;
+				count++;
+
+				overwrite = { pointers,false };
+
+				return 0;
+			}
+
+			int low = 0;
+			int high = (int)count - 1;
+
+			while (low <= high)
+			{
+				int middle = (low + high) >> 1;
+
+				switch (keys[middle].Compare(k, ref_pages, nullptr))
+				{
+				case -1:
+					low = middle + 1;
+					break;
+				case 1:
+					high = middle - 1;
+					break;
+				case 0:
 
 					if (count == bin_c)
 					{
@@ -288,6 +509,8 @@ namespace tdb
 					}
 					else
 					{
+						CheckKey(k);
+
 						Expand(middle);
 
 						keys[middle] = k;
@@ -311,6 +534,8 @@ namespace tdb
 			}
 			else
 			{
+				CheckKey(k);
+
 				Expand(low);
 
 				keys[low] = k;
@@ -455,6 +680,7 @@ namespace tdb
 		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::pointers;
 		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::links;
 		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::count;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::CheckKey;
 
 		void Init()
 		{
@@ -470,6 +696,8 @@ namespace tdb
 
 			if (pointers[bin] == (pointer_t)-1)
 			{
+				CheckKey(k);
+
 				keys[bin] = k;
 				pointers[bin] = p;
 				count++;
@@ -508,6 +736,8 @@ namespace tdb
 
 			if (z != -1)
 			{
+				CheckKey(k);
+
 				keys[z] = k;
 				pointers[z] = p;
 				count++;
@@ -697,8 +927,6 @@ namespace tdb
 			Open(_io);
 		}
 
-		void Validate() {} //todo checksum node after full, or increment symmetric checksum each insert
-
 		void Open(R* _io, size_t & _n)
 		{
 			root_n = _n++;
@@ -737,7 +965,32 @@ private:
 			return count;
 		}
 
+		bool _Validate(node_t* node)
+		{
+			if (!node->Validate()) 
+				return false;
+
+			for (int i = 0; i < link_c; i++)
+			{
+				if (node->links[i])
+				{
+					if (!_Validate(&io->template Lookup<node_t>((uint64_t)node->links[i]))) 
+						return false;
+				}
+			}
+
+			return true;
+		}
+
 public: 
+
+		bool Validate() const
+		{
+			if (!Root())
+				return true;
+			else
+				return _Validate(Root());
+		}
 		
 		template < typename F > int Iterate(F &&f) const
 		{

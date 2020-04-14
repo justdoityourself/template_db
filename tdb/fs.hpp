@@ -49,6 +49,9 @@ namespace tdb
 				auto sp = (SEG*)(((uint8_t*)this) + seg_offset);
 				for(auto & r : runs)
 					*sp++ = SEG(r);
+
+				if (Size() != Size(_size, _time, names, parents, keys, runs))
+					std::cout << "here";
 			}
 
 			template < size_t value_c > auto Value() { return 0; }
