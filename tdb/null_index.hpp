@@ -15,7 +15,7 @@ namespace tdb
 	public:
 		_NullIndex() {}
 
-		void Validate() {} 
+		bool Validate() { return true; }
 
 		void Open(R* _io, size_t& _n) { }
 

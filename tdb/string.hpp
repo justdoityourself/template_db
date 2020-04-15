@@ -29,7 +29,10 @@ namespace tdb
 
 		_StringSearch() {}
 
-		void Validate() {} //TODO
+		bool Validate() 
+		{
+			return bucket.Validate();
+		} 
 
 		void Open(R* _io, size_t& _n)
 		{
@@ -157,7 +160,10 @@ namespace tdb
 
 		_NullStringSearch() {}
 
-		void Validate() {} //TODO
+		bool Validate() 
+		{
+			return true;
+		}
 
 		void Open(R* _io, size_t& _n) { }
 

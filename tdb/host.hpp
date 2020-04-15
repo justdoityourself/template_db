@@ -18,9 +18,12 @@ namespace tdb
 			t.Open(this, n);
 		}
 
-		template < typename T > void ValidateTable(T& t)
+		template < typename T > void ValidateTable(T& t,bool & r)
 		{
-			t.Validate();
+			if (!r)
+				return;
+
+			r = t.Validate();
 		}
 	public:
 		_Database() {}
@@ -32,9 +35,12 @@ namespace tdb
 		using R::GetObject;
 		using R::SetObject;
 
-		void Validate()
+		bool Validate()
 		{
-			std::apply([&](auto& ...x) {(ValidateTable(x), ...); }, tables);
+			bool result = true;
+			std::apply([&](auto& ...x) {(ValidateTable(x,result), ...); }, tables);
+
+			return result;
 		}
 
 		template <typename ... t_args> _Database(t_args ... args)

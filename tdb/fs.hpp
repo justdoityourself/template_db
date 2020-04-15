@@ -36,7 +36,7 @@ namespace tdb
 				parent_offset = (uint16_t)(sizeof(FileT) + l1);
 				parent_count = (uint16_t)parents.size();
 
-				std::copy(parents.begin(), parents.end(), (uint32_t*)((uint8_t*)this) + parent_offset);
+				std::copy(parents.begin(), parents.end(), (uint32_t*)(((uint8_t*)this) + parent_offset));
 
 				key_offset = (uint16_t)(parent_offset + parents.size()*sizeof(uint32_t));
 				key_count = (uint16_t)keys.size() / sizeof(KEY);
@@ -50,8 +50,9 @@ namespace tdb
 				for(auto & r : runs)
 					*sp++ = SEG(r);
 
-				if (Size() != Size(_size, _time, names, parents, keys, runs))
-					std::cout << "here";
+				//Debug Assert
+				//if (Size() != Size(_size, _time, names, parents, keys, runs))
+				//	std::cout << "Problem";
 			}
 
 			template < size_t value_c > auto Value() { return 0; }
@@ -86,11 +87,11 @@ namespace tdb
 		using R = AsyncMap<128 * 1024 * 1024>;
 		using E = SimpleSurrogateTableBuilder32 <FileT<Segment32>>;
 		using NameSearch = StringSearch32<R>;
-		using HashSearch = BTree< R, MultiSurrogateKeyPointer32<R> >;
+		using HashSearch = BTree< R, MultiSurrogateKeyPointer32v<R> >;
 		using MountSearch = BTree< R, OrderedSegmentPointer32<uint32_t> >;
 
 		using NameNull = NullStringSearch32<R>;
-		using HashNull = NullIndex< R, MultiSurrogateKeyPointer32<R> >;
+		using HashNull = NullIndex< R, MultiSurrogateKeyPointer32v<R> >;
 		using MountNull = NullIndex< R, OrderedSegmentPointer32<uint32_t> >;
 
 		using FullIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameSearch, HashSearch, MountSearch > >; //This is too expensive ATM, todo optimize.

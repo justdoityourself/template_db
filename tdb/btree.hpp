@@ -102,15 +102,18 @@ namespace tdb
 		{
 			if constexpr (check_v)
 			{
+				Lock();
 				int_t _checksum = 0;
 
 				for (int_t i = 0; i < count; i++)
 				{
 					int_t* ptr = (int_t*)&keys[i];
 
-					for (size_t i = 0; sizeof(key_t) / sizeof(int_t); i++, ptr++)
+					for (size_t i = 0; i < sizeof(key_t) / sizeof(int_t); i++, ptr++)
 						_checksum ^= *ptr;
 				}
+
+				Unlock();
 
 				return _checksum == checksum;
 			}
@@ -125,7 +128,7 @@ namespace tdb
 				static_assert(sizeof(key_t) % sizeof(int_t) == 0);
 				int_t* ptr = (int_t*)&k;
 
-				for (size_t i = 0; sizeof(key_t) / sizeof(int_t); i++, ptr++)
+				for (size_t i = 0; i < sizeof(key_t) / sizeof(int_t); i++, ptr++)
 					checksum ^= *ptr;
 			}
 		}
@@ -202,12 +205,12 @@ namespace tdb
 		static const int Links = link_c;
 		static const int Padding = padding_c;
 
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::keys;
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::pointers;
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::links;
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::count;
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::CheckKey;
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::Expand;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::keys;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::pointers;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::links;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::count;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::CheckKey;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::Expand;
 
 		void Init() {}
 
@@ -441,7 +444,7 @@ namespace tdb
 	};*/
 
 
-	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, size_t padding_c = 0, bool check_v = false > struct _OrderedMultiListNode : public _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>
+	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, size_t padding_c = 0, bool check_v = false > struct _OrderedMultiListNode : public _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>
 	{
 		uint8_t padding[padding_c];
 
@@ -453,12 +456,12 @@ namespace tdb
 		static const int Links = link_c;
 		static const int Padding = padding_c;
 
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::keys;
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::pointers;
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::links;
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::count;
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::Expand;
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::CheckKey;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::keys;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::pointers;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::links;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::count;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::Expand;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::CheckKey;
 
 		void Init() {}
 
@@ -663,7 +666,7 @@ namespace tdb
 		}
 	};
 
-	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, size_t fuzz_c, size_t padding_c = 0 > struct _FuzzyHashNode : public _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>
+	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, size_t fuzz_c, size_t padding_c = 0, bool check_v = false > struct _FuzzyHashNode : public _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>
 	{
 		uint8_t padding[padding_c];
 
@@ -676,11 +679,11 @@ namespace tdb
 		static const size_t Links = link_c;
 		static const size_t Padding = padding_c;
 
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::keys;
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::pointers;
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::links;
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::count;
-		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c>::CheckKey;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::keys;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::pointers;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::links;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::count;
+		using _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>::CheckKey;
 
 		void Init()
 		{
@@ -965,7 +968,7 @@ private:
 			return count;
 		}
 
-		bool _Validate(node_t* node)
+		bool _Validate(node_t* node) const
 		{
 			if (!node->Validate()) 
 				return false;
@@ -1298,35 +1301,35 @@ public:
 
 
 
-	template <size_t page_s, typename int_t, typename key_t, typename pointer_t, typename link_t, size_t link_c>
+	template <size_t page_s, typename int_t, typename key_t, typename pointer_t, typename link_t, size_t link_c, bool check_v = false>
 	using OrderedListBuilder = _OrderedListNode<	int_t,
 													key_t,
 													pointer_t,
 													link_t,
 													(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) / (sizeof(key_t) + sizeof(pointer_t)),
 													link_c,
-													(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) % (sizeof(key_t) + sizeof(pointer_t)) >;
+													(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) % (sizeof(key_t) + sizeof(pointer_t)), check_v >;
 
 
-	template <size_t page_s, typename int_t, typename key_t, size_t link_c = 4> using SimpleOrderedListBuilder = OrderedListBuilder<page_s, int_t, key_t, int_t, int_t, link_c>;
+	template <size_t page_s, typename int_t, typename key_t, size_t link_c = 4, bool check_v = false> using SimpleOrderedListBuilder = OrderedListBuilder<page_s, int_t, key_t, int_t, int_t, link_c, check_v>;
 
 
 
-	template <size_t page_s, typename int_t, typename key_t, typename pointer_t, typename link_t, size_t link_c>
+	template <size_t page_s, typename int_t, typename key_t, typename pointer_t, typename link_t, size_t link_c, bool check_v = false>
 	using MultiListBuilder = _OrderedMultiListNode<	int_t,
 													key_t,
 													pointer_t,
 													link_t,
 													(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) / (sizeof(key_t) + sizeof(pointer_t)),
 													link_c,
-													(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) % (sizeof(key_t) + sizeof(pointer_t)) >;
+													(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) % (sizeof(key_t) + sizeof(pointer_t)), check_v >;
 
 
-	template <size_t page_s, typename int_t, typename key_t, size_t link_c = 4> using SimpleMultiListBuilder = MultiListBuilder<page_s, int_t, key_t, int_t, int_t, link_c>;
+	template <size_t page_s, typename int_t, typename key_t, size_t link_c = 4, bool check_v = false> using SimpleMultiListBuilder = MultiListBuilder<page_s, int_t, key_t, int_t, int_t, link_c, check_v>;
 
 
 
-	template <size_t page_s, typename int_t, typename key_t, typename pointer_t, typename link_t, size_t link_c, size_t fuzzy_c>
+	template <size_t page_s, typename int_t, typename key_t, typename pointer_t, typename link_t, size_t link_c, size_t fuzzy_c, bool check_v = false>
 	using FuzzyHashBuilder = _FuzzyHashNode <	int_t,
 												key_t,
 												pointer_t,
@@ -1334,9 +1337,9 @@ public:
 												(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) / (sizeof(key_t) + sizeof(pointer_t)),
 												link_c,
 												fuzzy_c,
-												(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) % (sizeof(key_t) + sizeof(pointer_t)) >;
+												(page_s - sizeof(int_t) * 3 - sizeof(link_t) * link_c) % (sizeof(key_t) + sizeof(pointer_t)), check_v >;
 
-	template <size_t page_s, typename int_t, typename key_t, size_t fuzzy_c = 4, size_t link_c = 4> using SimpleFuzzyHashBuilder = FuzzyHashBuilder<page_s, int_t, key_t, int_t, int_t, link_c, fuzzy_c>;
+	template <size_t page_s, typename int_t, typename key_t, size_t fuzzy_c = 4, size_t link_c = 4, bool check_v = false> using SimpleFuzzyHashBuilder = FuzzyHashBuilder<page_s, int_t, key_t, int_t, int_t, link_c, fuzzy_c, check_v>;
 
 
 

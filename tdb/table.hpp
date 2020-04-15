@@ -89,7 +89,7 @@ namespace tdb
 			Open(_io);
 		}
 
-		void Validate() {} //TODO
+		bool Validate() { return false; } //TODO
 
 		void Open(R* _io, size_t & _n)
 		{
@@ -504,6 +504,13 @@ namespace tdb
 			t.Open(io, n);
 		}	
 
+		template < typename T > void ValidateIndex(T& t, bool& n)
+		{
+			if (!n) return;
+
+			n = t.Validate();
+		}
+
 		template<size_t I = 0, typename... Tkey, typename... Tidx> void InsertIndex(const std::tuple<Tkey...>& ks, std::tuple<Tidx...>& dx, link_t v)
 		{
 			std::get<I>(dx).Insert(std::get<I>(ks), v);
@@ -566,7 +573,14 @@ namespace tdb
 
 		_SurrogateTable() {}
 
-		void Validate() {} //TODO
+		bool Validate() 
+		{ 
+			bool result = true;
+
+			std::apply([&](auto& ...x) { (ValidateIndex(x, result), ...); }, indexes);
+
+			return result;
+		} //TODO
 
 		void Open(R* _io, size_t& _n)
 		{

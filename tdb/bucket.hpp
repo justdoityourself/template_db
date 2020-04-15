@@ -33,7 +33,11 @@ namespace tdb
 			Open(_io);
 		}
 
-		void Validate() {} //TODO
+		bool Validate() 
+		{
+			//TODO VALIDATE BUCKETS
+			return index.Validate();
+		}
 
 		void Open(R* _io, size_t& _n)
 		{
