@@ -36,7 +36,7 @@ namespace tdb
 			lookup_t() {}
 
 			link_t pages[max_pages] = {};
-			pointer_t lookup[max_pages] = {};
+			pointer_t lookup[max_elements] = {};
 
 			int_t page_count = 0;
 			int_t lookup_count = 0;

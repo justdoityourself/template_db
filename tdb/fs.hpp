@@ -55,13 +55,36 @@ namespace tdb
 				//	std::cout << "Problem";
 			}
 
-			template < size_t value_c > auto Value() { return 0; }
-			template < > auto Value<0> () { return size; }
-			template < > auto Value<1>() { return time; }
-			template < > auto Value<2>() { return (const char *) (this+1); }
-			template < > auto Value<3>() { return gsl::span<uint32_t>((uint32_t*)(((uint8_t*)(this)) + parent_offset), parent_count); }
-			template < > auto Value<4>() { return gsl::span<KEY>((KEY*)(((uint8_t*)(this)) + key_offset), key_count); }
-			template < > auto Value<5>() { return gsl::span<SEG>((SEG*)(((uint8_t*)(this)) + seg_offset), seg_count); }
+			template < size_t value_c > auto Value() const { return 0; }
+			template < > auto Value<0> () const { return size; }
+			template < > auto Value<1>() const  { return time; }
+			template < > auto Value<2>() const
+			{ 
+				std::vector<std::string_view> result;
+				size_t len = parent_offset - sizeof(FileT) - 1;
+				std::string_view view((const char*)(this + 1), len);
+
+				size_t cur = 0;
+				for (size_t i = 0; i < len; i++)
+				{
+					if (view[i] == '|')
+					{
+						result.push_back(std::string_view(view.data() + cur, i - cur - 1));
+						cur = i;
+					}
+				}
+
+				result.push_back(std::string_view(view.data() + cur, len - cur));
+
+				return result; 
+			}
+			template < > auto Value<3>() const  { return gsl::span<uint32_t>((uint32_t*)(((uint8_t*)(this)) + parent_offset), parent_count); }
+			template < > auto Value<4>() const { return gsl::span<KEY>((KEY*)(((uint8_t*)(this)) + key_offset), key_count); }
+			template < > auto Value<5>() const { return gsl::span<SEG>((SEG*)(((uint8_t*)(this)) + seg_offset), seg_count); }
+			template < > auto Value<6>() const { return (const char*)(this + 1); }
+
+			auto Parents() const { return Value<3>(); }
+			auto Names() const { return Value<2>(); }
 
 			auto Keys(uint64_t n)
 			{
@@ -101,6 +124,6 @@ namespace tdb
 
 		enum Tables { Files };
 		enum Indexes { Names, Hash, Disk };
-		enum Values { Size, Time, Name,Parent,Keys,Runs };
+		enum Values { Size, Time, NameList,Parent,Keys,Runs,Name };
 	}
 }
