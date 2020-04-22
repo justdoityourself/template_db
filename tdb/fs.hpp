@@ -16,7 +16,7 @@ namespace tdb
 		{
 			FileT() {}
 
-			template < typename RUNS> static size_t Size(uint64_t size, uint64_t time, const char* names, std::vector<uint32_t> parents, const std::vector<uint8_t>& keys, const RUNS& runs)
+			template < typename RUNS> static size_t Size(uint16_t type,uint16_t flags,uint64_t size, uint64_t time, const char* names, std::vector<uint32_t> parents, const std::vector<uint8_t>& keys, const RUNS& runs)
 			{
 				return sizeof(FileT) + strlen(names) + 1 + parents.size() * sizeof(uint32_t) + keys.size() + sizeof(SEG) * runs.size();
 			}
@@ -26,9 +26,11 @@ namespace tdb
 				return ((size_t)seg_offset) + seg_count * sizeof(SEG);
 			}
 
-			template < typename RUNS> FileT(uint64_t _size, uint64_t _time, const char* names, std::vector<uint32_t> parents, const std::vector<uint8_t>& keys, const RUNS& runs)
+			template < typename RUNS> FileT(uint16_t _type, uint16_t _flags, uint64_t _size, uint64_t _time, const char* names, std::vector<uint32_t> parents, const std::vector<uint8_t>& keys, const RUNS& runs)
 				: size(_size)
 				, time(_time)
+				, type(_type)
+				, flags(_flags)
 			{
 				size_t l1 = strlen(names) + 1;
 				std::copy(names, names + l1, (char*)(this + 1));
@@ -58,6 +60,7 @@ namespace tdb
 			template < size_t value_c > auto Value() const { return 0; }
 			template < > auto Value<0> () const { return size; }
 			template < > auto Value<1>() const  { return time; }
+
 			template < > auto Value<2>() const
 			{ 
 				std::vector<std::string_view> result;
@@ -78,6 +81,7 @@ namespace tdb
 
 				return result; 
 			}
+
 			template < > auto Value<3>() const  { return gsl::span<uint32_t>((uint32_t*)(((uint8_t*)(this)) + parent_offset), parent_count); }
 			template < > auto Value<4>() const { return gsl::span<KEY>((KEY*)(((uint8_t*)(this)) + key_offset), key_count); }
 			template < > auto Value<5>() const { return gsl::span<SEG>((SEG*)(((uint8_t*)(this)) + seg_offset), seg_count); }
@@ -85,6 +89,8 @@ namespace tdb
 
 			auto Parents() const { return Value<3>(); }
 			auto Names() const { return Value<2>(); }
+			auto Type() const { return type; }
+			auto Flags() const { return flags; }
 
 			auto Keys(uint64_t n)
 			{
@@ -103,9 +109,14 @@ namespace tdb
 			uint16_t key_count;
 			uint16_t seg_offset;
 			uint16_t seg_count;
+			uint16_t type;
+			uint16_t flags;
 		};
 
 #pragma pack(pop)
+
+		//Mempry Mapped:
+		//
 
 		using R = AsyncMap<128 * 1024 * 1024>;
 		using E = SimpleSurrogateTableBuilder32 <FileT<Segment32>>;
@@ -122,8 +133,27 @@ namespace tdb
 		using HalfIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashSearch, MountSearch > >;
 		using MinimalIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashSearch, MountNull > >;
 
+		//Read Only Memory:
+		//
+
+		using MRO = AsyncMemoryView<>;
+		using NameSearchM = StringSearch32<MRO>;
+		using HashSearchM = BTree< MRO, MultiSurrogateKeyPointer32v<R> >;
+		using MountSearchM = BTree< MRO, OrderedSegmentPointer32<uint32_t> >;
+
+		using NameNullM = NullStringSearch32<MRO>;
+		using HashNullM = NullIndex< MRO, MultiSurrogateKeyPointer32v<MRO> >;
+		using MountNullM = NullIndex< MRO, OrderedSegmentPointer32<uint32_t> >;
+
+		using FullIndex32M = DatabaseBuilder < MRO, SurrogateTable<MRO, E, NameSearchM, HashSearchM, MountSearchM > >; //This is too expensive ATM, todo optimize.
+		using NoIndex32M = DatabaseBuilder < MRO, SurrogateTable<MRO, E, NameNullM, HashNullM, MountNullM > >;
+		using HalfIndex32M = DatabaseBuilder < MRO, SurrogateTable<MRO, E, NameNullM, HashSearchM, MountSearchM > >;
+		using MinimalIndex32M = DatabaseBuilder < MRO, SurrogateTable<MRO, E, NameNullM, HashSearchM, MountNullM > >;
+
 		enum Tables { Files };
 		enum Indexes { Names, Hash, Disk };
 		enum Values { Size, Time, NameList,Parent,Keys,Runs,Name };
+		enum Types { File, Folder };
+		enum Flags {  };
 	}
 }
