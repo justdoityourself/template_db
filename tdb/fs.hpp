@@ -65,6 +65,10 @@ namespace tdb
 			{ 
 				std::vector<std::string_view> result;
 				size_t len = parent_offset - sizeof(FileT) - 1;
+
+				if (len > 0xffff)
+					return std::vector<std::string_view>();
+
 				std::string_view view((const char*)(this + 1), len);
 
 				size_t cur = 0;
@@ -87,8 +91,29 @@ namespace tdb
 			template < > auto Value<5>() const { return gsl::span<SEG>((SEG*)(((uint8_t*)(this)) + seg_offset), seg_count); }
 			template < > auto Value<6>() const { return (const char*)(this + 1); }
 
+			auto Filesize() const { return size; }
+			auto Time() const { return time; }
 			auto Parents() const { return Value<3>(); }
 			auto Names() const { return Value<2>(); }
+			auto Name() const { return Value<6>(); }
+
+			auto Descriptor() { return Value<4>(); }
+
+			template < typename T > auto DescriptorT() 
+			{ 
+				return gsl::span<T>((T*)(((uint8_t*)(this)) + key_offset), key_count);
+			}
+
+			auto FirstName() const 
+			{
+				auto _n = Names();
+
+				if (!_n.size())
+					return std::string_view("");
+
+				return _n[0];
+			}
+
 			auto Type() const { return type; }
 			auto Flags() const { return flags; }
 
@@ -115,11 +140,18 @@ namespace tdb
 
 #pragma pack(pop)
 
+		//Table/Row:
+		//
+
+		using Row = FileT<Segment32>;
+		using E = SimpleSurrogateTableBuilder32 <Row>;
+
+
+
 		//Mempry Mapped:
 		//
 
 		using R = AsyncMap<128 * 1024 * 1024>;
-		using E = SimpleSurrogateTableBuilder32 <FileT<Segment32>>;
 		using NameSearch = StringSearch32<R>;
 		using HashSearch = BTree< R, MultiSurrogateKeyPointer32v<R> >;
 		using MountSearch = BTree< R, OrderedSegmentPointer32<uint32_t> >;
@@ -132,6 +164,8 @@ namespace tdb
 		using NoIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashNull, MountNull > >;
 		using HalfIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashSearch, MountSearch > >;
 		using MinimalIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashSearch, MountNull > >;
+
+
 
 		//Read Only Memory:
 		//
