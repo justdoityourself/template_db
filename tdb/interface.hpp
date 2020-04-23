@@ -38,6 +38,21 @@ namespace tdb
 			});
 		}
 
+		template < size_t value_c, typename F> void StringSearchIndex(std::string_view text,F && f)
+		{
+			size_t i = 0;
+			table.Iterate([&](auto & row)
+			{
+				bool _continue = true;
+				if(-1 != std::string_view(row.Value<value_c>()).find(text))
+					_continue = f(i,row);
+
+				i++;
+
+				return _continue;
+			});
+		}
+
 		/*
 			Operations that take place from the context of the TABLE and DATABASE go here:
 		*/
