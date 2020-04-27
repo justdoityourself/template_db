@@ -140,6 +140,8 @@ namespace tdb
 
 #pragma pack(pop)
 
+		//TODO DIRECTORY INDEX -> VIA key bucket
+
 		//Table/Row:
 		//
 
@@ -148,7 +150,7 @@ namespace tdb
 
 
 
-		//Mempry Mapped:
+		//Memory Mapped:
 		//
 
 		using R = AsyncMap<128 * 1024 * 1024>;
