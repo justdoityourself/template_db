@@ -11,6 +11,7 @@
 #include "../gsl-lite.hpp"
 
 #include "keys.hpp"
+#include "types.hpp"
 
 namespace tdb
 {
@@ -195,6 +196,8 @@ namespace tdb
 
 	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, size_t padding_c = 0, bool check_v = false > struct _OrderedListNode : public _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>
 	{
+		static const uint32_t type = TableType::btree_sorted_list;
+
 		uint8_t padding[padding_c];
 
 		using Pointer = pointer_t;
@@ -446,6 +449,8 @@ namespace tdb
 
 	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, size_t padding_c = 0, bool check_v = false > struct _OrderedMultiListNode : public _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>
 	{
+		static const uint32_t type = TableType::btree_sorted_multilist;
+
 		uint8_t padding[padding_c];
 
 		using Pointer = pointer_t;
@@ -668,6 +673,8 @@ namespace tdb
 
 	template < typename int_t, typename key_t, typename pointer_t, typename link_t, size_t bin_c, size_t link_c, size_t fuzz_c, size_t padding_c = 0, bool check_v = false > struct _FuzzyHashNode : public _BaseNode<int_t, key_t, pointer_t, link_t, bin_c, link_c, check_v>
 	{
+		static const uint32_t type = TableType::btree_fuzzymap;
+
 		uint8_t padding[padding_c];
 
 		using Pointer = pointer_t;
@@ -799,109 +806,6 @@ namespace tdb
 		}
 	};
 
-	template <typename int_t> struct _IntWrapper
-	{
-		_IntWrapper() {}
-		_IntWrapper(int_t t): key(t){}
-
-		using Key = int_t;
-		int_t key = 0;
-
-		int Compare(const _IntWrapper& rs, void* _ref_page, void * direct_page)
-		{
-			//NO SURROGATE INTS! todo surrogate bigint wrapper
-
-			if (key > rs.key)
-				return 1;
-			if (key < rs.key)
-				return -1;
-			return 0;
-		}
-
-		//No int wrapper hashmaps ( equals function )
-	};
-
-	template <typename int_t> struct _Segment
-	{
-		_Segment() {}
-		_Segment(const std::pair<int_t, int_t>& p) : start(p.first), length(p.second) {}
-		template < typename T > explicit  _Segment(const T& t) : start((int_t)t.start), length((int_t)t.length) {}
-		_Segment(int_t o, int_t l) : start(o), length(l) {}
-
-		int_t start = 0;
-		int_t length = 0;
-
-		int Compare(const _Segment& rs, void* _ref_page, void* direct_page)
-		{
-			if (start >= rs.start + rs.length)
-				return 1;
-			if (start + length <= rs.start)
-				return -1;
-			return 0;
-		}
-	};
-
-	template <typename R, typename int_t> struct _OrderedSurrogateString
-	{
-		_OrderedSurrogateString() {}
-		_OrderedSurrogateString(int_t t) : sz_offset(t) {}
-
-		int_t sz_offset = 0;
-
-		int Compare(const _OrderedSurrogateString& rs, void* _ref_page, void* direct_page)
-		{
-			auto ref_page = (R*)_ref_page;
-
-			auto l = (const char*)ref_page->GetObject(sz_offset);
-			auto r = (const char*)((!rs.sz_offset) ? (uint8_t*)direct_page : ref_page->GetObject(rs.sz_offset));
-
-			return strcmp(l, r);
-		}
-	};
-
-	template <typename R, typename int_t, typename key_t> struct _SurrogateKey
-	{
-		_SurrogateKey() {}
-		_SurrogateKey(int_t t) : sz_offset(t) {}
-
-		int_t sz_offset = 0;
-
-		int Compare(const _SurrogateKey& rs, void* _ref_page, void* direct_page)
-		{
-			auto ref_page = (R*)_ref_page;
-
-			auto l = (key_t*)ref_page->GetObject(sz_offset);
-			auto r = (key_t*)((!rs.sz_offset) ? (uint8_t*)direct_page : ref_page->GetObject(rs.sz_offset));
-
-			return l->Compare(*r);
-		}
-
-		bool Equal(const _SurrogateKey& rs, void* _ref_page, void* direct_page)
-		{
-			auto ref_page = (R*)_ref_page;
-
-			auto l = (key_t*)ref_page->GetObject(sz_offset);
-			auto r = (key_t*)((!rs.sz_offset) ? (uint8_t*)direct_page : ref_page->GetObject(rs.sz_offset));
-
-			return l->Equal(*r);
-		}
-	};
-
-	template < size_t L > std::string_view string_viewz(const char (&t) [L])
-	{
-		return std::string_view(t, L);
-	}
-
-	void* string_voidz(const char * t)
-	{
-		return (void*)t;
-	}
-
-	template < typename T >void* key_void(T& t)
-	{
-		return (void*)&t;
-	}
-
 #pragma warning( pop )
 #pragma pack(pop)
 
@@ -939,6 +843,30 @@ namespace tdb
 			{
 				auto r = &io->template Allocate<node_t>();
 				r->Init();
+
+				/*
+					Runtime Introspection:
+				*/
+
+				auto & desc = io->GetDescriptor(root_n);
+
+				desc.type = node_t::type;
+
+				desc.standard_index.self_balanced = (uint32_t)false;
+				desc.standard_index.requires_distributed_key = (uint32_t)true;
+
+				desc.standard_index.key_sz = sizeof(key_t);
+				desc.standard_index.link_sz = sizeof(link_t);
+				desc.standard_index.pointer_sz = sizeof(pointer_t);
+				desc.standard_index.key_mode = key_t::mode;
+
+				desc.standard_index.max_capacity = (uint32_t)node_t::Bins;
+				desc.standard_index.min_capacity = (uint16_t)-1;
+
+				desc.standard_index.max_page = (uint32_t)sizeof(node_t);
+				desc.standard_index.min_page = (uint16_t)-1;
+
+				desc.standard_index.link_count = node_t::Links;
 			}
 		}
 

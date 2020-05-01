@@ -281,7 +281,7 @@ namespace tdb
 		}
 	};
 
-	template <uint64_t growsize_t = 1024 * 1024, size_t grace_t = 64, size_t page_t = 64 * 1024> class _ReadMemoryList
+	template <uint64_t growsize_t = 1024 * 1024, size_t grace_t = 16*1024, size_t page_t = 64 * 1024> class _ReadMemoryList
 	{
 		std::vector<uint8_t> mem;
 
@@ -366,7 +366,7 @@ namespace tdb
 		}
 	};
 
-	template <uint64_t growsize_t = 1024 * 1024, size_t grace_t = 64, size_t page_t = 64*1024> class _MapList
+	template <uint64_t growsize_t = 1024 * 1024, size_t grace_t = 16*1024, size_t page_t = 64*1024> class _MapList
 	{
 		std::recursive_mutex ll;
 		std::list<mio::mmap_sink> list;

@@ -318,11 +318,13 @@
     <ClInclude Include="tdb\null_index.hpp" />
     <ClInclude Include="tdb\pages.hpp" />
     <ClInclude Include="tdb\recycling.hpp" />
+    <ClInclude Include="tdb\stree.hpp" />
     <ClInclude Include="tdb\string.hpp" />
     <ClInclude Include="tdb\table.hpp" />
     <ClInclude Include="tdb\tdb.hpp" />
     <ClInclude Include="tdb\test.hpp" />
     <ClInclude Include="tdb\test_legacy.hpp" />
+    <ClInclude Include="tdb\types.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />

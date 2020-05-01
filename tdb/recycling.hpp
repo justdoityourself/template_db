@@ -13,6 +13,46 @@ namespace tdb
 	template < typename M, uint64_t unit_t> class _Recycling : M
 	{
 		static const uint64_t null_t = (uint64_t)-1;
+
+#pragma pack(push,1)
+		struct _Descriptor
+		{
+			uint32_t type = 0;
+
+			union
+			{
+				struct
+				{
+					uint32_t self_balanced : 1;
+					uint32_t requires_distributed_key : 1;
+					uint32_t flags : 30;
+
+					uint8_t key_sz;
+					uint8_t pointer_sz;
+					uint8_t link_sz;
+					uint8_t key_mode;
+
+					uint32_t max_capacity;
+					uint16_t min_capacity;
+					uint32_t max_page;
+					uint16_t min_page;
+
+					uint8_t link_count;
+
+					uint8_t unused[7];
+				} standard_index;
+
+				struct
+				{
+					uint8_t unused[28];
+				} standard_table;
+
+				uint32_t custom[7] = { 0 };
+				uint8_t byte_view[28];
+				uint16_t short_view[14];
+			};
+		};
+
 		struct _Header
 		{
 			uint64_t count = 0;
@@ -20,7 +60,7 @@ namespace tdb
 			uint64_t inuse = 0;
 			uint64_t time = 0;
 
-			uint64_t _align[4] = { 0 };
+			_Descriptor descriptors[511];
 		};
 
 		struct _HeaderLock
@@ -30,12 +70,20 @@ namespace tdb
 			std::atomic<uint64_t> inuse = 0;
 			std::atomic<uint64_t> time = 0;
 
-			uint64_t _align[4] = { 0 };
+			_Descriptor descriptors[511];
 		};
+#pragma pack(pop)
+
+		static_assert(sizeof(_Header) == 16 * 1024);
 
 	public:
 
 		static const auto UnitSize = unit_t;
+
+		_Descriptor& GetDescriptor(size_t dx)
+		{
+			return Header().descriptors[dx];
+		}
 
 		using M::Flush;
 		using M::Stale;
