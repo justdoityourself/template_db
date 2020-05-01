@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "types.hpp"
+
 namespace tdb
 {
 	using namespace std;
@@ -97,7 +99,20 @@ namespace tdb
 			io = _io;
 
 			if (io->size() <= root_n)
+			{
 				io->template Allocate<lookup_t>();
+
+				/*
+					Runtime Introspection:
+				*/
+
+				auto& desc = io->GetDescriptor(root_n);
+
+				desc.type = TableType::table_fixed;
+
+				desc.standard_table.max_rows = max_pages * page_elements;
+				desc.standard_table.index_count = std::tuple_size< std::tuple<index_t...> >::value;
+			}
 
 			_Open(_n);
 		}
@@ -353,7 +368,20 @@ namespace tdb
 			io = _io;
 
 			if (io->size() <= root_n)
+			{
 				io->template Allocate<lookup_t>();
+
+				/*
+					Runtime Introspection:
+				*/
+
+				auto& desc = io->GetDescriptor(root_n);
+
+				desc.type = TableType::table_dynamic;
+
+				desc.standard_table.max_rows = max_pages * page_elements;
+				desc.standard_table.index_count = std::tuple_size< std::tuple<index_t...> >::value;
+			}
 
 			_Open(_n);
 		}
@@ -588,7 +616,20 @@ namespace tdb
 			io = _io;
 
 			if (io->size() <= root_n)
+			{
 				io->template Allocate<lookup_t>();
+
+				/*
+					Runtime Introspection:
+				*/
+
+				auto& desc = io->GetDescriptor(root_n);
+
+				desc.type = TableType::table_surrogate;
+
+				desc.standard_table.max_rows = max_pages * page_elements;
+				desc.standard_table.index_count = std::tuple_size< std::tuple<index_t...> >::value;
+			}
 
 			_Open(_n);
 		}

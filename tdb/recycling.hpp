@@ -31,6 +31,7 @@ namespace tdb
 					uint8_t pointer_sz;
 					uint8_t link_sz;
 					uint8_t key_mode;
+					uint8_t key_type;
 
 					uint32_t max_capacity;
 					uint16_t min_capacity;
@@ -38,13 +39,19 @@ namespace tdb
 					uint16_t min_page;
 
 					uint8_t link_count;
+					uint8_t pointer_mode;
 
-					uint8_t unused[7];
+					uint8_t unused[5];
 				} standard_index;
 
 				struct
 				{
-					uint8_t unused[28];
+					uint32_t flags : 32;
+					uint32_t max_rows;
+
+					uint8_t index_count;
+
+					uint8_t unused[19];
 				} standard_table;
 
 				uint32_t custom[7] = { 0 };
@@ -81,6 +88,11 @@ namespace tdb
 		static const auto UnitSize = unit_t;
 
 		_Descriptor& GetDescriptor(size_t dx)
+		{
+			return Header().descriptors[dx];
+		}
+
+		const _Descriptor& GetDescriptor(size_t dx) const
 		{
 			return Header().descriptors[dx];
 		}

@@ -16,6 +16,7 @@ namespace tdb
 	template <typename T1, typename T2 = T1> struct KeyT
 	{
 		static const uint8_t mode = KeyMode::key_mode_direct;
+		static const uint8_t type = KeyType::key_type_distributed;
 
 		KeyT() {}
 
@@ -162,6 +163,7 @@ namespace tdb
 	template <typename int_t> struct _IntWrapper
 	{
 		static const uint8_t mode = KeyMode::key_mode_direct;
+		static const uint8_t type = KeyType::key_type_mixed;
 
 		_IntWrapper() {}
 		_IntWrapper(int_t t) : key(t) {}
@@ -186,6 +188,7 @@ namespace tdb
 	template <typename int_t> struct _Segment
 	{
 		static const uint8_t mode = KeyMode::key_mode_direct;
+		static const uint8_t type = KeyType::key_type_sequential;
 
 		_Segment() {}
 		_Segment(const std::pair<int_t, int_t>& p) : start(p.first), length(p.second) {}
@@ -208,6 +211,7 @@ namespace tdb
 	template <typename R, typename int_t> struct _OrderedSurrogateString
 	{
 		static const uint8_t mode = KeyMode::key_mode_surrogate;
+		static const uint8_t type = KeyType::key_type_sequential;
 
 		_OrderedSurrogateString() {}
 		_OrderedSurrogateString(int_t t) : sz_offset(t) {}
@@ -228,6 +232,7 @@ namespace tdb
 	template <typename R, typename int_t, typename key_t> struct _SurrogateKey
 	{
 		static const uint8_t mode = KeyMode::key_mode_surrogate;
+		static const uint8_t type = KeyType::key_type_distributed;
 
 		_SurrogateKey() {}
 		_SurrogateKey(int_t t) : sz_offset(t) {}

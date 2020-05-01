@@ -96,6 +96,12 @@
     <ClInclude Include="tdb\types.hpp">
       <Filter>tdb</Filter>
     </ClInclude>
+    <ClInclude Include="tdb\runtime_description.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
+    <ClInclude Include="tdb\sql.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="tdb.cpp">

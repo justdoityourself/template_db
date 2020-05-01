@@ -5,6 +5,8 @@
 #include <tuple>
 #include <utility>
 
+#include "runtime_description.hpp"
+
 namespace tdb
 {
 	using namespace std;
@@ -26,6 +28,11 @@ namespace tdb
 			r = t.Validate();
 		}
 	public:
+		std::string About()
+		{
+			return DescribeDatabase(*this);
+		}
+
 		_Database() {}
 
 		using R::Flush;
@@ -61,6 +68,11 @@ namespace tdb
 		template <size_t I > auto Table() const
 		{
 			return get<I>(tables);
+		}
+
+		auto TableCount() const
+		{
+			return std::tuple_size< std::tuple<tables_t...> >::value;
 		}
 
 		auto ReadWriteIndex()

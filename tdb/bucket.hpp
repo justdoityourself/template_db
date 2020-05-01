@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "types.hpp"
+
 namespace tdb
 {
 	using namespace std;
@@ -44,6 +46,9 @@ namespace tdb
 			io = _io;
 
 			index.Open(io, _n);
+
+			auto & desc = io->GetDescriptor(_n - 1);
+			desc.standard_index.pointer_mode = PointerMode::pointer_mode_bucket;
 		}
 
 		template <typename T, typename V> void Insert(const T& k, const V& v)

@@ -859,6 +859,7 @@ namespace tdb
 				desc.standard_index.link_sz = sizeof(link_t);
 				desc.standard_index.pointer_sz = sizeof(pointer_t);
 				desc.standard_index.key_mode = key_t::mode;
+				desc.standard_index.key_type = key_t::type;
 
 				desc.standard_index.max_capacity = (uint32_t)node_t::Bins;
 				desc.standard_index.min_capacity = (uint16_t)-1;
