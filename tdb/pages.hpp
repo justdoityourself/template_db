@@ -28,7 +28,8 @@ namespace tdb
 	//
 
 	template <typename int_t> 	using OrderedSegmentPointer =			SimpleMultiListBuilder<64 * 1024, uint64_t, _Segment<int_t> >;
-	template <typename int_t> 	using OrderedSegmentPointer32 =			SimpleMultiListBuilder<64 * 1024, uint32_t, _Segment<int_t> >;
+								using OrderedSegmentPointer32 =			SimpleMultiListBuilder<64 * 1024, uint32_t, _Segment<uint32_t> >;
+	template <typename int_t>	using OrderedIntKey =					MultiListBuilder <64 * 1024, int_t, _IntWrapper<int_t>, Key32, int_t>;
 	template <typename R>		using MultiSurrogateStringPointer =		SimpleMultiListBuilder<64 * 1024, uint64_t, _OrderedSurrogateString<R, uint64_t> >;
 	template <typename R>		using MultiSurrogateKeyPointer32 =		SimpleMultiListBuilder<64 * 1024, uint32_t, _SurrogateKey<R, uint32_t, Key32> >;
 	template <typename R>		using MultiSurrogateKeyPointer32v =		SimpleMultiListBuilder<64 * 1024, uint32_t, _SurrogateKey<R, uint32_t, Key32>,4,true >;

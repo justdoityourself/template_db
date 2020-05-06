@@ -156,16 +156,18 @@ namespace tdb
 		using R = AsyncMap<128 * 1024 * 1024>;
 		using NameSearch = StringSearch32<R>;
 		using HashSearch = BTree< R, MultiSurrogateKeyPointer32v<R> >;
-		using MountSearch = BTree< R, OrderedSegmentPointer32<uint32_t> >;
+		using MountSearch = BTree< R, OrderedSegmentPointer32 >;
+		using NonFileComponent = BTree< R, OrderedIntKey<uint32_t> >;
 
 		using NameNull = NullStringSearch32<R>;
 		using HashNull = NullIndex< R, MultiSurrogateKeyPointer32v<R> >;
-		using MountNull = NullIndex< R, OrderedSegmentPointer32<uint32_t> >;
+		using MountNull = NullIndex< R, OrderedSegmentPointer32 >;
+		using NonFileComponentNull = NullIndex< R, OrderedIntKey<uint32_t> >;
 
-		using FullIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameSearch, HashSearch, MountSearch > >; //This is too expensive ATM, todo optimize.
-		using NoIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashNull, MountNull > >;
-		using HalfIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashSearch, MountSearch > >;
-		using MinimalIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashSearch, MountNull > >;
+		using FullIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameSearch, HashSearch, MountSearch >, NonFileComponent >; //This is too expensive ATM, todo optimize.
+		using NoIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashNull, MountNull >, NonFileComponentNull >;
+		using HalfIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashSearch, MountSearch >, NonFileComponent >;
+		using MinimalIndex32 = DatabaseBuilder < R, SurrogateTable<R, E, NameNull, HashSearch, MountNull >, NonFileComponentNull >;
 
 
 
@@ -175,16 +177,18 @@ namespace tdb
 		using MRO = AsyncMemoryView<>;
 		using NameSearchM = StringSearch32<MRO>;
 		using HashSearchM = BTree< MRO, MultiSurrogateKeyPointer32v<R> >;
-		using MountSearchM = BTree< MRO, OrderedSegmentPointer32<uint32_t> >;
+		using MountSearchM = BTree< MRO, OrderedSegmentPointer32 >;
+		using NonFileComponentM = BTree< MRO, OrderedIntKey<uint32_t> >;
 
 		using NameNullM = NullStringSearch32<MRO>;
 		using HashNullM = NullIndex< MRO, MultiSurrogateKeyPointer32v<MRO> >;
-		using MountNullM = NullIndex< MRO, OrderedSegmentPointer32<uint32_t> >;
+		using MountNullM = NullIndex< MRO, OrderedSegmentPointer32 >;
+		using NonFileComponentNullM = BTree< MRO, OrderedIntKey<uint32_t> >;
 
-		using FullIndex32M = DatabaseBuilder < MRO, SurrogateTable<MRO, E, NameSearchM, HashSearchM, MountSearchM > >; //This is too expensive ATM, todo optimize.
-		using NoIndex32M = DatabaseBuilder < MRO, SurrogateTable<MRO, E, NameNullM, HashNullM, MountNullM > >;
-		using HalfIndex32M = DatabaseBuilder < MRO, SurrogateTable<MRO, E, NameNullM, HashSearchM, MountSearchM > >;
-		using MinimalIndex32M = DatabaseBuilder < MRO, SurrogateTable<MRO, E, NameNullM, HashSearchM, MountNullM > >;
+		using FullIndex32M = DatabaseBuilder < MRO, SurrogateTable<MRO, E, NameSearchM, HashSearchM, MountSearchM >, NonFileComponentM >; //This is too expensive ATM, todo optimize.
+		using NoIndex32M = DatabaseBuilder < MRO, SurrogateTable<MRO, E, NameNullM, HashNullM, MountNullM >, NonFileComponentNullM >;
+		using HalfIndex32M = DatabaseBuilder < MRO, SurrogateTable<MRO, E, NameNullM, HashSearchM, MountSearchM >, NonFileComponentM >;
+		using MinimalIndex32M = DatabaseBuilder < MRO, SurrogateTable<MRO, E, NameNullM, HashSearchM, MountNullM >, NonFileComponentNullM >;
 
 		enum Tables { Files };
 		enum Indexes { Names, Hash, Disk };

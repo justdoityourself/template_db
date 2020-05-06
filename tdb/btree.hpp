@@ -1244,7 +1244,7 @@ public:
 
 
 
-	template <size_t page_s, typename int_t, typename key_t, typename pointer_t, typename link_t, size_t link_c, bool check_v = false>
+	template <size_t page_s, typename int_t, typename key_t, typename pointer_t, typename link_t, size_t link_c = 4, bool check_v = false>
 	using MultiListBuilder = _OrderedMultiListNode<	int_t,
 													key_t,
 													pointer_t,
