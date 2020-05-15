@@ -882,7 +882,7 @@ private:
 
 			for (int i = 0, c = 0; i < (int)node->count; c++)
 			{
-				if(node->pointers[c] != (pointer_t)-1)
+				if(node->pointers[c] != (pointer_t)-1) // this is designed to filter out unused type in fuzzy map. Doesn't work with non int value types.
 				{ 
 					i++;
 					if (!f(node->pointers[c]))
@@ -893,6 +893,30 @@ private:
 			for (int i = 0; i < link_c; i++)
 				if (node->links[i])
 					count += _Iterate(&io->template Lookup<node_t>((uint64_t)node->links[i]), f);
+
+			return count;
+		}
+
+		template < typename F > int _IterateKV(node_t* node, F&& f) const
+		{
+			int count = node->count;
+
+			if (!count)
+				return 0;
+
+			for (int i = 0, c = 0; i < (int)node->count; c++)
+			{
+				//if (node->pointers[c] != (pointer_t)-1) //Disabling fuzzy map filtering for K/V version
+				{
+					i++;
+					if (!f(node->keys[c],node->pointers[c]))
+						return i;
+				}
+			}
+
+			for (int i = 0; i < link_c; i++)
+				if (node->links[i])
+					count += _IterateKV(&io->template Lookup<node_t>((uint64_t)node->links[i]), f);
 
 			return count;
 		}
@@ -930,6 +954,14 @@ public:
 				return 0;
 			else
 				return _Iterate(Root(),std::move(f));
+		}
+
+		template < typename F > int IterateKV(F&& f) const
+		{
+			if (!Root())
+				return 0;
+			else
+				return _IterateKV(Root(), std::move(f));
 		}
 
 		pointer_t* Find(const key_t& k, void* ref_page=nullptr) const
