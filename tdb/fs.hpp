@@ -99,6 +99,8 @@ namespace tdb
 
 			auto Descriptor() { return Value<4>(); }
 
+			auto Runs() const { return Value<5>(); }
+
 			template < typename T > auto DescriptorT() 
 			{ 
 				return gsl::span<T>((T*)(((uint8_t*)(this)) + key_offset), key_count);
