@@ -192,7 +192,7 @@ namespace tdb
 		using HalfIndex32M = DatabaseBuilder < MRO, SurrogateTable<MRO, E, NameNullM, HashSearchM, MountSearchM >, NonFileComponentM >;
 		using MinimalIndex32M = DatabaseBuilder < MRO, SurrogateTable<MRO, E, NameNullM, HashSearchM, MountNullM >, NonFileComponentNullM >;
 
-		enum Tables { Files };
+		enum Tables { Files, Blocks };
 		enum Indexes { Names, Hash, Disk };
 		enum Values { Size, Time, NameList,Parent,Keys,Runs,Name };
 		enum Types { File, Folder };

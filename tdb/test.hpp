@@ -14,6 +14,103 @@
 using namespace tdb;
 
 
+
+TEST_CASE("Range Find", "[tdb::]")
+{
+    std::filesystem::remove_all("db.dat");
+
+    using R = AsyncMap<>;
+
+    using Database = DatabaseBuilder < R, BTree< R, OrderedSegmentPointer<uint64_t> > >;
+    using Segment = std::pair<uint64_t, uint64_t>;
+
+    enum Tables { Segments };
+
+    {
+        Database db("db.dat");
+        auto segments = db.Table<Segments>();
+
+        segments.Insert(Segment(15, 5), uint64_t(1));
+        segments.Insert(Segment(20, 1), uint64_t(2));
+        segments.Insert(Segment(21, 4), uint64_t(3));
+
+        size_t count = 0;
+        segments.RangeFind([&](auto* p) 
+        {
+            count++;
+        }, Segment(15, 1), Segment(25, 1));
+
+        CHECK(count == 3); 
+
+
+
+        count = 0;
+        segments.RangeFind([&](auto* p)
+        {
+            count++;
+        }, Segment(14, 1), Segment(20, 1));
+
+        CHECK(count == 2);
+
+
+
+        count = 0;
+        segments.RangeFind([&](auto* p)
+        {
+            count++;
+        }, Segment(14, 1), Segment(14, 1));
+
+        CHECK(count == 0);
+
+
+
+        count = 0;
+        segments.RangeFind([&](auto* p)
+        {
+            count++;
+        }, Segment(15, 1), Segment(16, 1));
+
+        CHECK(count == 1);
+
+
+
+        count = 0;
+        segments.RangeFind([&](auto* p)
+        {
+            count++;
+        }, Segment(20, 1), Segment(29, 1));
+
+        CHECK(count == 2);
+
+
+        count = 0;
+        segments.RangeFind([&](auto* p)
+        {
+            count++;
+        }, Segment(22, 1), Segment(29, 1));
+
+        CHECK(count == 1);
+
+        count = 0;
+        segments.RangeFind([&](auto* p)
+        {
+            count++;
+        }, Segment(22, 6), Segment(29, 1));
+
+        CHECK(count == 1);
+
+        count = 0;
+        segments.RangeFind([&](auto* p)
+        {
+            count++;
+        }, Segment(28, 1), Segment(29, 0));
+
+        CHECK(count == 0);
+    }
+
+    std::filesystem::remove_all("db.dat");
+}
+
 TEST_CASE("Network Layer", "[tdb::]")
 {
     //NETWORK LAYER TODO

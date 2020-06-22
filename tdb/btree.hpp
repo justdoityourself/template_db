@@ -321,6 +321,56 @@ namespace tdb
 			else
 				return 0;
 		}
+
+		template < typename F > std::pair<int,int> FindRange(F && f, const key_t& low_k, const key_t& high_k, size_t depth, void* ref_pages, void* ref_page2)
+		{
+			if (!count)
+				return std::make_pair(0,0);
+
+			int low = 0;
+			int high = (int)count - 1;
+
+			while (low <= high)
+			{
+				int middle = (low + high) >> 1;
+
+				switch (keys[middle].Compare(low_k, ref_pages, ref_page2))
+				{
+				case -1:
+					low = middle + 1;
+					break;
+				case 1:
+					high = middle - 1;
+					break;
+				case 0:
+					while (middle - 1 > 0 && keys[middle - 1].Compare(low_k, ref_pages, ref_page2) >= 0) middle--;
+					low = middle;
+					goto BREAK;
+				}
+			}
+		BREAK:
+
+
+			if (low == bin_c)
+				low--;
+			else if (low == -1)
+				low++;
+
+			for (high = low; high < count && keys[high].Compare(low_k, ref_pages, ref_page2) >= 0 && keys[high].Compare(high_k, ref_pages, ref_page2) <= 0; high++)
+				f(pointers + high);
+
+			if (count == bin_c)
+			{
+				if (high == bin_c)
+					high--;
+				else if (high == -1)
+					high++;
+
+				return std::make_pair((low * link_c / bin_c) + 1, (high * link_c / bin_c) + 1);
+			}
+			else
+				return std::make_pair(0, 0);			
+		}
 	};
 
 	//TODO LOCAL SURROGATE, benchmark
@@ -668,6 +718,55 @@ namespace tdb
 			}
 			else
 				return 0;
+		}
+
+		template < typename F > std::pair<int, int> FindRange(F&& f, const key_t& low_k, const key_t& high_k, size_t depth, void* ref_pages, void* ref_page2)
+		{
+			if (!count)
+				return std::make_pair(0, 0);
+
+			int low = 0;
+			int high = (int)count - 1;
+
+			while (low <= high)
+			{
+				int middle = (low + high) >> 1;
+
+				switch (keys[middle].Compare(low_k, ref_pages, ref_page2))
+				{
+				case -1:
+					low = middle + 1;
+					break;
+				case 1:
+					high = middle - 1;
+					break;
+				case 0:
+					while (middle-1 > 0 && keys[middle-1].Compare(low_k, ref_pages, ref_page2) >= 0) middle--;
+					low = middle;
+					goto BREAK;
+				}
+			}
+		BREAK:
+
+			if (low == bin_c)
+				low--;
+			else if (low == -1)
+				low++;
+
+			for (high = low; high < count && keys[high].Compare(low_k, ref_pages, ref_page2) >= 0 && keys[high].Compare(high_k, ref_pages, ref_page2) <= 0; high++)
+				f(pointers + high);
+
+			if (count == bin_c)
+			{
+				if (high == bin_c)
+					high--;
+				else if (high == -1)
+					high++;
+
+				return std::make_pair((low * link_c / bin_c) + 1, (high * link_c / bin_c) + 1);
+			}
+			else
+				return std::make_pair(0, 0);
 		}
 	};
 
@@ -1024,6 +1123,29 @@ public:
 					else
 						current = next;
 				}
+			}
+		}
+
+		template <typename F> void RangeFind(F&& f, const key_t& low_k, const key_t& high_k, void* ref_page = nullptr, node_t* current = nullptr) const
+		{
+			if (!current)
+				current = Root();
+
+			auto [low,high] = current->FindRange(f, low_k, high_k, 0, (void*)io, ref_page);
+
+			if (!low && !high)
+				return;
+			else
+			{
+				low--; high--;
+
+				while (low++ <= high)
+				{
+					auto next = &io->template Lookup<node_t>(current->links[low]);
+					if(next)
+						RangeFind(f, low_k, high_k, ref_page, next);
+				}
+
 			}
 		}
 
