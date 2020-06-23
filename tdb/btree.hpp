@@ -357,7 +357,7 @@ namespace tdb
 				low++;
 
 			for (high = low; high < count && keys[high].Compare(low_k, ref_pages, ref_page2) >= 0 && keys[high].Compare(high_k, ref_pages, ref_page2) <= 0; high++)
-				f(pointers + high);
+				f(keys[high],pointers[high]);
 
 			if (count == bin_c)
 			{
@@ -754,7 +754,7 @@ namespace tdb
 				low++;
 
 			for (high = low; high < count && keys[high].Compare(low_k, ref_pages, ref_page2) >= 0 && keys[high].Compare(high_k, ref_pages, ref_page2) <= 0; high++)
-				f(pointers + high);
+				f(keys[high],pointers[high]);
 
 			if (count == bin_c)
 			{
@@ -1084,7 +1084,7 @@ public:
 				{
 					result--;
 
-					next = &io->template Lookup<node_t>(current->links[result]);
+					next = (current->links[result]) ? &io->template Lookup<node_t>(current->links[result]) : nullptr;
 
 					if (!next)
 						return nullptr;
@@ -1116,7 +1116,7 @@ public:
 				{
 					result--;
 
-					next = &io->template Lookup<node_t>(current->links[result]);
+					next = (current->links[result]) ? &io->template Lookup<node_t>(current->links[result]) : nullptr;
 
 					if (!next)
 						return;
@@ -1139,9 +1139,9 @@ public:
 			{
 				low--; high--;
 
-				while (low++ <= high)
+				for (;low <= high;low++)
 				{
-					auto next = &io->template Lookup<node_t>(current->links[low]);
+					auto next = (current->links[low]) ? &io->template Lookup<node_t>(current->links[low]) : nullptr;
 					if(next)
 						RangeFind(f, low_k, high_k, ref_page, next);
 				}
@@ -1224,7 +1224,7 @@ public:
 				{
 					result--;
 
-					next = &io->template Lookup<node_t>(current->links[result]);
+					next = (current->links[result]) ? &io->template Lookup<node_t>(current->links[result]) : nullptr;
 
 					if (!next)
 						return nullptr;

@@ -35,7 +35,7 @@ TEST_CASE("Range Find", "[tdb::]")
         segments.Insert(Segment(21, 4), uint64_t(3));
 
         size_t count = 0;
-        segments.RangeFind([&](auto* p) 
+        segments.RangeFind([&](auto& k, auto& v)
         {
             count++;
         }, Segment(15, 1), Segment(25, 1));
@@ -45,7 +45,7 @@ TEST_CASE("Range Find", "[tdb::]")
 
 
         count = 0;
-        segments.RangeFind([&](auto* p)
+        segments.RangeFind([&](auto& k, auto& v)
         {
             count++;
         }, Segment(14, 1), Segment(20, 1));
@@ -55,7 +55,7 @@ TEST_CASE("Range Find", "[tdb::]")
 
 
         count = 0;
-        segments.RangeFind([&](auto* p)
+        segments.RangeFind([&](auto& k, auto& v)
         {
             count++;
         }, Segment(14, 1), Segment(14, 1));
@@ -65,7 +65,7 @@ TEST_CASE("Range Find", "[tdb::]")
 
 
         count = 0;
-        segments.RangeFind([&](auto* p)
+        segments.RangeFind([&](auto& k, auto& v)
         {
             count++;
         }, Segment(15, 1), Segment(16, 1));
@@ -75,7 +75,7 @@ TEST_CASE("Range Find", "[tdb::]")
 
 
         count = 0;
-        segments.RangeFind([&](auto* p)
+        segments.RangeFind([&](auto&k, auto&v)
         {
             count++;
         }, Segment(20, 1), Segment(29, 1));
@@ -84,7 +84,7 @@ TEST_CASE("Range Find", "[tdb::]")
 
 
         count = 0;
-        segments.RangeFind([&](auto* p)
+        segments.RangeFind([&](auto& k, auto& v)
         {
             count++;
         }, Segment(22, 1), Segment(29, 1));
@@ -92,7 +92,7 @@ TEST_CASE("Range Find", "[tdb::]")
         CHECK(count == 1);
 
         count = 0;
-        segments.RangeFind([&](auto* p)
+        segments.RangeFind([&](auto& k, auto& v)
         {
             count++;
         }, Segment(22, 6), Segment(29, 1));
@@ -100,7 +100,7 @@ TEST_CASE("Range Find", "[tdb::]")
         CHECK(count == 1);
 
         count = 0;
-        segments.RangeFind([&](auto* p)
+        segments.RangeFind([&](auto& k, auto& v)
         {
             count++;
         }, Segment(28, 1), Segment(29, 0));

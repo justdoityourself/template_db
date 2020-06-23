@@ -820,6 +820,14 @@ namespace tdb
 				return f(At(*dx));
 			}, k, ref);
 		}
+
+		template < size_t I, typename F, typename K > void FindRange(F&& f, const K& l, const K& h, void* ref = nullptr)
+		{
+			std::get<I>(indexes).RangeFind([&, f = std::move(f)](auto& k,auto & v)
+			{
+				return f(k,v);
+			}, l,h, ref);
+		}
 	};
 
 	template < typename R, typename element_t, typename ... index_t > using SurrogateTable = _SurrogateTable<R, element_t, index_t...>;
