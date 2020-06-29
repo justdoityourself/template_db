@@ -58,8 +58,8 @@ struct Element
 
     Element(uint64_t _id, const char* first, const char* last, const char* _address) :id(_id)
     {
-        strncpy_s(first_name, first, 31);
-        strncpy_s(last_name, last, 31);
+        strncpy_s(first_name, first, 11);
+        strncpy_s(last_name, last, 11);
         strncpy_s(address, _address, 31);
     }
 
