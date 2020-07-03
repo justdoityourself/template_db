@@ -825,7 +825,7 @@ namespace tdb
 		{
 			std::get<I>(indexes).RangeFind([&, f = std::move(f)](auto& k,auto & v)
 			{
-				return f(k,v);
+				return f(At(v));
 			}, l,h, ref);
 		}
 	};
