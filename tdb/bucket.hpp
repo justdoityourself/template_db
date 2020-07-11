@@ -94,6 +94,9 @@ namespace tdb
 			{
 				auto [ptr, overwrite] = handle;
 
+				if (!ptr)
+					std::cout << std::endl;
+
 				if (!overwrite) //The overwrite indicator is atomic
 				{
 					size_t size = v.size();
@@ -126,6 +129,9 @@ namespace tdb
 				auto ph = (header*)_header;
 
 				auto lh = (link*)((ph->last) ? io->GetObject(ph->last) : (_header + sizeof(header)));
+
+				if (!lh)
+					std::cout << std::endl;
 
 				size_t rem = v.size(), off = 0;
 

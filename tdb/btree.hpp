@@ -801,7 +801,7 @@ namespace tdb
 
 		int Insert(const key_t& k, const pointer_t& p, pair<pointer_t*, bool>& overwrite, size_t depth, void* ref_pages)
 		{
-			int bin = (*(((uint16_t*)&k) + depth) % bin_c);
+			int bin = (*(((uint16_t*)&k) + (depth % max_rec())) % bin_c);
 
 			if (pointers[bin] == (pointer_t)-1)
 			{
@@ -1168,8 +1168,8 @@ public:
 
 			while (current)
 			{
-				if(depth >= current->max_rec())
-					return { nullptr,false };
+				//if(depth >= current->max_rec()) //Recursion should roll around using mod.
+				//	return { nullptr,false };
 
 				pair<pointer_t*, bool> overwrite;
 				int result = current->Insert(k, p, overwrite,depth++,(void*)io);

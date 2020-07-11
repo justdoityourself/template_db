@@ -102,6 +102,12 @@
     <ClInclude Include="tdb\sql.hpp">
       <Filter>tdb</Filter>
     </ClInclude>
+    <ClInclude Include="tdb\se.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
+    <ClInclude Include="tdb\poly_keys.hpp">
+      <Filter>tdb</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="tdb.cpp">

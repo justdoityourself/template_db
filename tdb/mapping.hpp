@@ -563,6 +563,22 @@ namespace tdb
 			return 0;
 		}
 
+		void Flush2(uint8_t* p,size_t length)
+		{
+			uint64_t c = 0;
+			for (auto& m : list)
+			{
+				if (p >= (uint8_t*)m.data() && p < (uint8_t*)m.data() + m.size())
+				{
+					std::error_code c;
+					m.sync2(p, length, c);
+					break;
+				}
+
+				c += m.size();
+			}
+		}
+
 		pair<uint8_t*, uint64_t> AllocateAlign(uint64_t szof)
 		{
 			auto rem = szof % page_t;
