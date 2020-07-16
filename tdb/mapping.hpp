@@ -200,7 +200,7 @@ namespace tdb
 
 	template <uint64_t growsize_t = 1024 * 1024, size_t page_t = 64 * 1024> class _ReadMemoryFile
 	{
-		std::vector<uint8_t> mem;
+		d8u::sse_vector mem;
 
 		struct _Header
 		{
@@ -232,9 +232,9 @@ namespace tdb
 		void Reopen(){}
 
 		_ReadMemoryFile() {}
-		_ReadMemoryFile(std::vector<uint8_t>& _m) { Open(_m);  }
+		_ReadMemoryFile(d8u::sse_vector& _m) { Open(_m);  }
 
-		void Open(std::vector<uint8_t>& _m)
+		void Open(d8u::sse_vector& _m)
 		{
 			mem = std::move(_m);
 		}
@@ -283,7 +283,7 @@ namespace tdb
 
 	template <uint64_t growsize_t = 1024 * 1024, size_t grace_t = 16*1024, size_t page_t = 64 * 1024> class _ReadMemoryList
 	{
-		std::vector<uint8_t> mem;
+		d8u::sse_vector mem;
 
 		struct _Header
 		{
@@ -317,9 +317,9 @@ namespace tdb
 		void Reopen() {}
 
 		_ReadMemoryList() {}
-		_ReadMemoryList(std::vector<uint8_t>& _m) { Open(_m); }
+		_ReadMemoryList(d8u::sse_vector& _m) { Open(_m); }
 
-		void Open(std::vector<uint8_t>& _m)
+		void Open(d8u::sse_vector& _m)
 		{
 			mem = std::move(_m);
 		}
