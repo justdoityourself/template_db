@@ -50,12 +50,12 @@ namespace tdb
 			return result;
 		}
 
-		template <typename ... t_args> _Database(t_args ... args)
+		template <typename ... t_args> _Database(t_args &&... args)
 		{
 			Open(args...);
 		}
 
-		template <typename ... t_args> auto Open(t_args ... args)
+		template <typename ... t_args> auto Open(t_args &&... args)
 		{
 			R::Open(args...);
 

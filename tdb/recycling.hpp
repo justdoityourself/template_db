@@ -145,12 +145,12 @@ namespace tdb
 
 		_Recycling() {}
 
-		template <typename ... t_args> _Recycling(t_args ... args)
+		template <typename ... t_args> _Recycling(t_args &&... args)
 		{
 			Open(args...);
 		}
 
-		template <typename ... t_args> void Open(t_args ... args)
+		template <typename ... t_args> void Open(t_args &&... args)
 		{
 			M::Open(args...);
 
