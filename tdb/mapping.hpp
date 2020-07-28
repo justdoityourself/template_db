@@ -61,7 +61,7 @@ namespace tdb
 		}		
 
 	public:
-		std::pair<uint8_t*, uint64_t> Incidental(size_t s)
+		std::pair<uint8_t*, uint64_t> _Incidental(size_t s)
 		{
 			if (s > page_t)
 				return std::make_pair(nullptr, -1);
@@ -216,7 +216,7 @@ namespace tdb
 		}
 
 	public:
-		std::pair<uint8_t*, uint64_t> Incidental(size_t s)
+		std::pair<uint8_t*, uint64_t> _Incidental(size_t s)
 		{
 			return std::make_pair<nullptr, -1>;
 		}
@@ -301,7 +301,7 @@ namespace tdb
 		}
 
 	public:
-		std::pair<uint8_t*, uint64_t> Incidental(size_t s)
+		std::pair<uint8_t*, uint64_t> _Incidental(size_t s)
 		{
 			return std::make_pair<nullptr, -1>;
 		}
@@ -415,11 +415,16 @@ namespace tdb
 
 	public:
 
-		//Allocate an unaligned fragment of mapped fil space:
+		//Allocate an unaligned fragment of mapped file space:
 		//
 
-		std::pair<uint8_t*,uint64_t> Incidental(size_t s)
+		std::pair<uint8_t*,uint64_t> _Incidental(size_t s)
 		{
+			/*
+				This Implementation uses unformatted allocation and cannot
+				be comprehended by outside parse
+			*/
+
 			if (s > page_t)
 				return std::make_pair((uint8_t*)nullptr, (uint64_t)-1);
 

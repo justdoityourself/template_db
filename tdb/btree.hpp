@@ -59,6 +59,9 @@ namespace tdb
 
 		void Lock()
 		{
+			if (footer_guard != 0 && footer_guard != (int_t)_guard)
+				throw std::runtime_error("Bad Node");
+
 			static constexpr auto lock_delay = std::chrono::milliseconds(5);
 
 			auto lock = (std::atomic<int_t> * )& footer_guard;
@@ -1255,8 +1258,8 @@ public:
 
 			while (current)
 			{
-				if (depth >= current->max_rec())
-					return { nullptr,false };
+				//if (depth >= current->max_rec())
+				//	return { nullptr,false };
 
 				bool locked = false;
 				if (current->count != node_t::Bins) //Must be locked to insert
@@ -1324,8 +1327,8 @@ public:
 
 			while (current)
 			{
-				if (depth >= current->max_rec())
-					return f(pair<pointer_t*, bool>{ nullptr, false });
+				//if (depth >= current->max_rec())
+				//	return f(pair<pointer_t*, bool>{ nullptr, false });
 
 				bool locked = false;
 				if (current->count != node_t::Bins) //Must be locked to insert

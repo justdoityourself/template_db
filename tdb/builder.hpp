@@ -12,8 +12,8 @@ namespace tdb
 		On Disk, Read / Write, Memory Mapped Databases
 	*/
 
-	template <size_t GROW = 1024 * 1024, size_t PAGE = 64 * 1024> using SyncMap = _Recycling< _MapFile<GROW>, PAGE >; //Single Map, growth remaps entire address space therefore cannot be used with multiple threads.
-	template <size_t GROW = 1024 * 1024, size_t PAGE = 64 * 1024> using AsyncMap = _Recycling< _MapList<GROW>, PAGE >; //List of maps, address space will always remain valid even when object grows, can be used with multiple threads.
+	template <size_t GROW = 1024 * 1024, size_t PAGE = 64 * 1024> using SyncMap = _Recycling< _MapFile<GROW,PAGE>, PAGE >; //Single Map, growth remaps entire address space therefore cannot be used with multiple threads.
+	template <size_t GROW = 1024 * 1024, size_t PAGE = 64 * 1024> using AsyncMap = _Recycling< _MapList<GROW,16*1024,PAGE>, PAGE >; //List of maps, address space will always remain valid even when object grows, can be used with multiple threads.
 
 
 
@@ -21,8 +21,8 @@ namespace tdb
 		In Memory, Read Only Databases
 	*/
 
-	template <size_t GROW = 1024 * 1024, size_t PAGE = 64 * 1024> using SyncMemoryView = _Recycling< _ReadMemoryFile<GROW>, PAGE >; //Single buffer database object.
-	template <size_t GROW = 1024 * 1024, size_t PAGE = 64 * 1024> using AsyncMemoryView = _Recycling< _ReadMemoryList<GROW>, PAGE >; //Multi buffer database object.
+	template <size_t GROW = 1024 * 1024, size_t PAGE = 64 * 1024> using SyncMemoryView = _Recycling< _ReadMemoryFile<GROW,PAGE>, PAGE >; //Single buffer database object.
+	template <size_t GROW = 1024 * 1024, size_t PAGE = 64 * 1024> using AsyncMemoryView = _Recycling< _ReadMemoryList<GROW,16*1024,PAGE>, PAGE >; //Multi buffer database object.
 
 
 

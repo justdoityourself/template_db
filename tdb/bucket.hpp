@@ -94,10 +94,7 @@ namespace tdb
 			{
 				auto [ptr, overwrite] = handle;
 
-				if (!ptr)
-					std::cout << std::endl;
-
-				if (!overwrite) //The overwrite indicator is atomic
+				if (!overwrite)
 				{
 					size_t size = v.size();
 
@@ -105,9 +102,6 @@ namespace tdb
 						size = min_alloc;
 
 					auto [bucket, offset] = io->Incidental(sizeof(link) + sizeof(header) + size);
-
-					if (!offset)
-						offset = 0;
 
 					auto ph = (header*)bucket;
 					auto lh = (link*)(bucket + sizeof(header));
@@ -121,6 +115,7 @@ namespace tdb
 					std::copy(v.begin(), v.end(), bin);
 
 					*ptr = offset;
+
 					return std::make_pair(ptr, false);
 				}
 
@@ -128,10 +123,12 @@ namespace tdb
 
 				auto ph = (header*)_header;
 
-				auto lh = (link*)((ph->last) ? io->GetObject(ph->last) : (_header + sizeof(header)));
-
-				if (!lh)
-					std::cout << std::endl;
+				link* lh;
+				
+				if(ph->last)
+					lh = (link * )io->GetObject(ph->last);
+				else 
+					lh = (link * )(_header + sizeof(header));
 
 				size_t rem = v.size(), off = 0;
 
@@ -232,7 +229,7 @@ namespace tdb
 		}
 	};
 
-	template < typename R, typename index_t > using Stream = _StreamBucket<R, uint64_t, uint64_t, 1024, index_t>;
+	template < typename R, typename index_t > using Stream = _StreamBucket<R, uint64_t, uint64_t, 1024 - 36, index_t>;
 
 	//TODO FIXED BUCKET
 	//Better for random IO

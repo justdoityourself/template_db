@@ -99,12 +99,37 @@ namespace tdb
 
 		using M::Flush;
 		using M::Stale;
-		using M::Incidental;
+		using M::_Incidental;
 		using M::Close;
+
+		uint8_t* _GetObject(uint64_t off) const
+		{
+			return M::offset(off);
+		}
 
 		uint8_t* GetObject(uint64_t off) const
 		{
-			return M::offset(off);
+			auto result = M::offset(off);
+
+			uint16_t size = *((uint16_t*)result);
+			uint16_t guard = *((uint16_t*)(result + size + sizeof(uint16_t)));
+
+			if (guard != 0xffff)
+				throw std::runtime_error("Object Error");
+
+			return result + sizeof(uint16_t);
+		}
+
+		std::pair<uint8_t*, uint64_t> Incidental(size_t _s)
+		{
+			size_t s = _s + sizeof(uint16_t) * 2;
+
+			auto [result, offset] = M::_Incidental(s);
+
+			*((uint16_t*)result) = (uint16_t)_s;
+			*((uint16_t*)(result + _s + sizeof(uint16_t))) = uint16_t(0xffff);
+
+			return std::make_pair(result + sizeof(uint16_t), offset);
 		}
 
 		template< typename T> auto SetObject(const T& t)
