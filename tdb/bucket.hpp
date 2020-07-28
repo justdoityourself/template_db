@@ -58,12 +58,12 @@ namespace tdb
 
 		template <typename T, typename V> auto Write(const T& k, const V& v)
 		{
-			return _Write<false>(k, gsl::span<uint8_t>((uint8_t*)&v, sizeof(V)), std::is_integral<V>());
+			return _Write<false>(k,v, std::is_integral<V>());
 		}
 
 		template <typename T, typename V> auto _Write(const T& k, const V& v, std::true_type)
 		{
-			return _Write<false>(k,gsl::span<uint8_t>((uint8_t*)&v,sizeof(V)),std::bool_constant<false>());
+			return _Write<false>(k,v,std::bool_constant<false>());
 		}
 
 		template <typename T, typename V> void InsertLock(const T& k, const V& v)
@@ -73,12 +73,12 @@ namespace tdb
 
 		template <typename T, typename V> auto WriteLock(const T& k, const V& v)
 		{
-			return _WriteLock(k, gsl::span<uint8_t>((uint8_t*)&v, sizeof(V)), std::is_integral<V>());
+			return _WriteLock(k, v, std::is_integral<V>());
 		}
 
 		template <typename T, typename V> auto _WriteLock(const T& k, const V& v, std::true_type)
 		{
-			return _Write<true>(k, gsl::span<uint8_t>((uint8_t*)&v, sizeof(V)), std::bool_constant<false>());
+			return _Write<true>(k, v, std::bool_constant<false>());
 		}
 
 		template <typename T, typename V> auto _WriteLock(const T& k, const V& v, std::false_type)
