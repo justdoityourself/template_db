@@ -25,11 +25,11 @@ namespace tdb
 		};
 
 		using R = AsyncMap<32*1024*1024,512*1024>;
-		using N = SimpleFuzzyHashBuilder<512 * 1024, uint32_t, polynomial::F1B4C1_Key, 64,2>;
+		using N = SimpleFuzzyHashBuilder<512 * 1024, uint32_t, polynomial::F1B4C1_Key, 24,2>;
 
 		using E = SimpleTableElementBuilder <SearchRecord,512*1024,uint32_t>;
 
-		using I = SimpleFuzzyHashBuilder<512 * 1024, uint32_t, Key16, 64,2>;
-		using LeanIndexStream = DatabaseBuilder < R, _StreamBucket<R, uint32_t, uint32_t, 64 - 20, 1024 - 12, BTree< R, N>>, FixedTable<R, E, BTree< R, I>>  >;
+		using I = SimpleFuzzyHashBuilder<512 * 1024, uint32_t, Key16, 8,2>;
+		using LeanIndexStream = DatabaseBuilder < R, _StreamBucket<R, uint32_t, uint32_t, 64 - 20, 1024 - 12, BTree< R, N, 3 >>, FixedTable<R, E, BTree< R, I>>  >;
 	}
 }

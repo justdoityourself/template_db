@@ -913,7 +913,7 @@ namespace tdb
 
 
 
-	template < typename R, typename node_t > class _BTree
+	template < typename R, typename node_t, size_t double_stall_s = 1, size_t double_max_s = -1 > class _BTree
 	{
 		using key_t = typename node_t::Key;
 		using pointer_t = typename node_t::Pointer;
@@ -1107,6 +1107,9 @@ public:
 					return pr;
 				else
 				{
+					if (depth % double_stall_s != 0 || depth > double_max_s)
+						result = 1;
+
 					result--;
 
 					next = (current->links[result]) ? &io->template Lookup<node_t>(current->links[result]) : nullptr;
@@ -1139,6 +1142,9 @@ public:
 					return;
 				else
 				{
+					if (depth % double_stall_s != 0 || depth > double_max_s)
+						result = 1;
+
 					result--;
 
 					next = (current->links[result]) ? &io->template Lookup<node_t>(current->links[result]) : nullptr;
@@ -1203,6 +1209,9 @@ public:
 					return overwrite;
 				else
 				{
+					if (depth % double_stall_s != 0 || depth > double_max_s)
+						result = 1;
+
 					result--;
 
 					next = (current->links[result]) ? &io->template Lookup<node_t>(current->links[result]) : nullptr;
@@ -1247,6 +1256,9 @@ public:
 					return pr;
 				else
 				{
+					if (depth % double_stall_s != 0 || depth > double_max_s)
+						result = 1;
+
 					result--;
 
 					next = (current->links[result]) ? &io->template Lookup<node_t>(current->links[result]) : nullptr;
@@ -1300,6 +1312,9 @@ public:
 				}
 				else
 				{
+					if (depth % double_stall_s != 0 || depth > double_max_s)
+						result = 1;
+
 					result--;
 
 					next = (current->links[result]) ? &io->template Lookup<node_t>(current->links[result]) : nullptr;
@@ -1370,6 +1385,9 @@ public:
 				}
 				else
 				{
+					if (depth % double_stall_s != 0 || depth > double_max_s)
+						result = 1;
+
 					result--;
 
 					next = (current->links[result]) ? &io->template Lookup<node_t>(current->links[result]) : nullptr;
@@ -1451,5 +1469,5 @@ public:
 
 
 
-	template < typename R, typename N > using BTree = _BTree<R, N>;
+	template < typename R, typename N, size_t doubling_stall = 1, size_t doubling_max = -1 > using BTree = _BTree<R, N, doubling_stall, doubling_max>;
 }
