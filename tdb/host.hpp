@@ -65,7 +65,7 @@ namespace tdb
 			return tables;
 		}
 
-		template <size_t I > auto Table() const
+		template <size_t I > auto &Table() const
 		{
 			return get<I>(tables);
 		}

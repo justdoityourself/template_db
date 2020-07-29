@@ -8,7 +8,7 @@ namespace tdb
 {
 	using namespace std;
 
-	template < typename R, typename link_t, typename int_t, size_t min_alloc, typename index_t > class _StreamBucket
+	template < typename R, typename link_t, typename int_t, size_t initial_min_alloc, size_t grow_min_alloc, typename index_t > class _StreamBucket
 	{
 		index_t index;
 
@@ -27,6 +27,8 @@ namespace tdb
 		};
 
 	public:
+
+		auto& Index() { return index; }
 
 		_StreamBucket() {}
 
@@ -98,8 +100,8 @@ namespace tdb
 				{
 					size_t size = v.size();
 
-					if (size < min_alloc)
-						size = min_alloc;
+					if (size < initial_min_alloc)
+						size = initial_min_alloc;
 
 					auto [bucket, offset] = io->Incidental(sizeof(link) + sizeof(header) + size);
 
@@ -124,16 +126,23 @@ namespace tdb
 				auto ph = (header*)_header;
 
 				link* lh;
+				size_t available;
 				
-				if(ph->last)
-					lh = (link * )io->GetObject(ph->last);
-				else 
-					lh = (link * )(_header + sizeof(header));
+				if (ph->last)
+				{
+					lh = (link*)io->GetObject(ph->last);
+					available = (lh->size > grow_min_alloc) ? 0 : grow_min_alloc - lh->size;
+				}
+				else
+				{
+					lh = (link*)(_header + sizeof(header));
+					available = (lh->size > initial_min_alloc) ? 0 : initial_min_alloc - lh->size;
+				}
 
 				size_t rem = v.size(), off = 0;
 
 				uint8_t* bin = (uint8_t*)(lh + 1);
-				auto available = (lh->size > min_alloc) ? 0 : min_alloc - lh->size;
+
 
 				if (available > rem)
 					available = rem;
@@ -151,8 +160,8 @@ namespace tdb
 				{
 					size_t size = rem;
 
-					if (size < min_alloc)
-						size = min_alloc;
+					if (size < grow_min_alloc)
+						size = grow_min_alloc;
 
 					auto [bucket, offset] = io->Incidental(sizeof(link) + size);
 
@@ -229,7 +238,8 @@ namespace tdb
 		}
 	};
 
-	template < typename R, typename index_t > using Stream = _StreamBucket<R, uint64_t, uint64_t, 1024 - 36, index_t>;
+	template < typename R, typename index_t > using Stream = _StreamBucket<R, uint64_t, uint64_t, 1024 - 36, 1024 - 28, index_t>;
+	template < typename R, typename index_t > using SmallStream = _StreamBucket<R, uint32_t, uint32_t, 128 - 20, 128 - 12, index_t>;
 
 	//TODO FIXED BUCKET
 	//Better for random IO

@@ -305,6 +305,7 @@
     <ClInclude Include="tdb\btree.hpp" />
     <ClInclude Include="tdb\bucket.hpp" />
     <ClInclude Include="tdb\builder.hpp" />
+    <ClInclude Include="tdb\ctree.hpp" />
     <ClInclude Include="tdb\databases.hpp" />
     <ClInclude Include="tdb\fs.hpp" />
     <ClInclude Include="tdb\hash.hpp" />

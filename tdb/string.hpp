@@ -149,8 +149,8 @@ namespace tdb
 		}
 	};
 
-	template <typename R> using StringSearch = _StringSearch<R, _IntWrapper<uint32_t>, 3, _StreamBucket<R, uint64_t, uint64_t, 1024, BTree< R, SimpleOrderedListBuilder<64 * 1024, uint64_t, _IntWrapper<uint32_t> > > > >;
-	template <typename R> using StringSearch32 = _StringSearch<R, _IntWrapper<uint32_t>, 3, _StreamBucket<R, uint32_t, uint32_t, 1024, BTree< R, SimpleOrderedListBuilder<64 * 1024, uint32_t, _IntWrapper<uint32_t> > > > >;
+	template <typename R> using StringSearch = _StringSearch<R, _IntWrapper<uint32_t>, 3, _StreamBucket<R, uint64_t, uint64_t, 1024,1024, BTree< R, SimpleOrderedListBuilder<64 * 1024, uint64_t, _IntWrapper<uint32_t> > > > >;
+	template <typename R> using StringSearch32 = _StringSearch<R, _IntWrapper<uint32_t>, 3, _StreamBucket<R, uint32_t, uint32_t, 1024, 1024, BTree< R, SimpleOrderedListBuilder<64 * 1024, uint32_t, _IntWrapper<uint32_t> > > > >;
 
 
 
@@ -198,7 +198,7 @@ namespace tdb
 		}
 	};
 
-	template <typename R> using NullStringSearch = _NullStringSearch<R, _IntWrapper<uint32_t>, 3, _StreamBucket<R, uint64_t, uint64_t, 1024, BTree< R, SimpleOrderedListBuilder<64 * 1024, uint64_t, _IntWrapper<uint32_t> > > > >;
-	template <typename R> using NullStringSearch32 = _NullStringSearch<R, _IntWrapper<uint32_t>, 3, _StreamBucket<R, uint32_t, uint32_t, 1024, BTree< R, SimpleOrderedListBuilder<64 * 1024, uint32_t, _IntWrapper<uint32_t> > > > >;
+	template <typename R> using NullStringSearch = _NullStringSearch<R, _IntWrapper<uint32_t>, 3, _StreamBucket<R, uint64_t, uint64_t, 1024,1024, BTree< R, SimpleOrderedListBuilder<64 * 1024, uint64_t, _IntWrapper<uint32_t> > > > >;
+	template <typename R> using NullStringSearch32 = _NullStringSearch<R, _IntWrapper<uint32_t>, 3, _StreamBucket<R, uint32_t, uint32_t, 1024,1024, BTree< R, SimpleOrderedListBuilder<64 * 1024, uint32_t, _IntWrapper<uint32_t> > > > >;
 
 }

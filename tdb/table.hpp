@@ -195,6 +195,19 @@ namespace tdb
 			return Find<I>(0, (void*)ref);
 		}
 
+		template <typename K, typename ... t_args> std::pair<int_t, bool> EmplaceIf(const K & k, t_args &&... args)
+		{
+			auto dx = std::get<0>(indexes).Find(k);
+
+			if (!dx)
+			{
+				Emplace(args...);
+				return std::make_pair(Root()->used-1, false);
+			}
+			else
+				return std::make_pair(*dx,true);
+		}
+
 		template < size_t I, typename K > element_t * Find(const K & k, void* ref = nullptr)
 		{
 			auto dx = std::get<I>(indexes).Find(k,ref);

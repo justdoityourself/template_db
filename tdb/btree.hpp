@@ -975,6 +975,19 @@ namespace tdb
 
 private: 
 		
+		void _Population(node_t* node, std::pair<uint64_t,uint64_t> & sum) const
+		{
+			if (!node->count)
+				return;
+
+			sum.first += node->count;
+			sum.second += node_t::Bins;
+
+			for (int i = 0; i < link_c; i++)
+				if (node->links[i])
+					_Population(&io->template Lookup<node_t>((uint64_t)node->links[i]), sum);
+		}
+
 		template < typename F > int _Iterate(node_t* node, F && f) const
 		{
 			int count = node->count;
@@ -1048,6 +1061,15 @@ public:
 				return true;
 			else
 				return _Validate(Root());
+		}
+
+		std::pair<uint64_t, uint64_t> Population()
+		{
+			auto sum = std::make_pair(uint64_t(0), uint64_t(0));
+
+			_Population(Root(), sum);
+
+			return sum;
 		}
 		
 		template < typename F > int Iterate(F &&f) const
