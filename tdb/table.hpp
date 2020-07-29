@@ -201,7 +201,7 @@ namespace tdb
 
 			if (!dx)
 			{
-				Emplace(args...);
+				Emplace(k,args...);
 				return std::make_pair(Root()->used-1, false);
 			}
 			else

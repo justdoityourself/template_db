@@ -5,6 +5,8 @@
 #include "tdb.hpp"
 #include "poly_keys.hpp"
 
+#include "d8u/time.hpp"
+
 namespace tdb
 {
 	namespace search_engine
@@ -13,7 +15,14 @@ namespace tdb
 		{
 			SearchRecord() {}
 
-			SearchRecord(const Key16& fh) : file_hash(fh) { }
+			SearchRecord(const Key16& fh, uint32_t _modified, std::string_view _name, std::string_view _domain) 
+				: file_hash(fh) 
+				, inserted(d8u::time::epoch_seconds())
+				, modified(_modified) 
+			{ 
+				strncpy_s(name, _name.data(), (_name.size() <= 47) ? _name.size() : 47);
+				strncpy_s(domain, _domain.data(), (_domain.size() <= 15) ? _domain.size() : 15);
+			}
 
 			auto Keys(uint64_t n)
 			{
@@ -21,7 +30,11 @@ namespace tdb
 			}
 
 			Key16 file_hash;
-			//todo when, who, what, name and whatever else we need to know.
+			uint64_t rank = 1;
+			uint32_t modified;
+			uint32_t inserted;
+			char name[48] = {};
+			char domain[16] = {};
 		};
 
 		using R = AsyncMap<32*1024*1024,512*1024>;
