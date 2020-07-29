@@ -37,7 +37,7 @@ namespace tdb
 			char domain[16] = {};
 		};
 
-		using R = AsyncMap<32*1024*1024,512*1024>;
+		using R = AsyncMap<16*1024*1024,512*1024>;
 		using N = SimpleFuzzyHashBuilder<512 * 1024, uint32_t, polynomial::F1B4C1_Key, 24,2>;
 
 		using E = SimpleTableElementBuilder <SearchRecord,512*1024,uint32_t>;

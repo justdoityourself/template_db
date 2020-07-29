@@ -70,6 +70,11 @@ namespace tdb
 			return get<I>(tables);
 		}
 
+		template <size_t I > auto& Table()
+		{
+			return get<I>(tables);
+		}
+
 		auto TableCount() const
 		{
 			return std::tuple_size< std::tuple<tables_t...> >::value;
