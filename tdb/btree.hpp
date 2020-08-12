@@ -988,6 +988,21 @@ private:
 					_Population(&io->template Lookup<node_t>((uint64_t)node->links[i]), sum);
 		}
 
+		template < typename F > void _IterateNodes(node_t* node, F&& f) const
+		{
+			f(*node);
+
+			for (int i = 0; i < link_c; i++)
+				if (node->links[i])
+					_IterateNodes(&io->template Lookup<node_t>((uint64_t)node->links[i]), f);
+		}
+
+		template < typename F > void IterateNodes(F&& f) const
+		{
+			if (Root())
+				_IterateNodes(Root(), std::move(f));
+		}
+
 		template < typename F > int _Iterate(node_t* node, F && f) const
 		{
 			int count = node->count;
@@ -1061,6 +1076,21 @@ public:
 				return true;
 			else
 				return _Validate(Root());
+		}
+
+		int ResetNodeLocks()
+		{
+			int result = 0;
+			IterateNodes([&](auto & node)
+			{
+				if (node.footer_guard)
+				{
+					result++;
+					node.footer_guard = 0;
+				}
+			});
+
+			return result;
 		}
 
 		std::pair<uint64_t, uint64_t> Population()

@@ -270,6 +270,8 @@ namespace tdb
 			return db.Table<0>().FindLock(k, ref);
 		}
 
+		auto& Table() { return db.Table<0>();  }
+
 		template <typename K, typename V> bool InsertObject(const K& k, const V& v)
 		{
 			auto [ptr, status] = db.Table<0>().Insert(k, uint64_t(0));
